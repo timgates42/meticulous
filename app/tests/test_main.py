@@ -1,10 +1,10 @@
 """
 Test modules for:
 
-module_goes_here.__main__
+meticulous.__main__
 """
 
-from module_goes_here.__main__ import main
+from meticulous.__main__ import main
 
 
 def test_main():

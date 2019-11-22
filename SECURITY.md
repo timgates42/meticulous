@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-Please report vulnerabilities to the project email email@goes.here.
+Please report vulnerabilities to the project email tim.gates@iress.com.
 Security vulnerabilities will be gratefully received, taken seriously and
 promptly addressed.
 

@@ -14,15 +14,15 @@ import os
 import sys
 
 appdirname = "app"
-pyname = "module_goes_here"
+pyname = "meticulous"
 sys.path.insert(0, os.path.abspath(os.path.join("..", appdirname)))
 
 
 # -- Project information -----------------------------------------------------
 
-project = "module_goes_here"
-copyright = "2019, name_goes_here"
-author = "name_goes_here"
+project = "meticulous"
+copyright = "2019, Tim Gates"
+author = "Tim Gates"
 
 
 def read_version():

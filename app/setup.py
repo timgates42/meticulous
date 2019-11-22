@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-`setuptools` Distribution for module_goes_here
+`setuptools` Distribution for meticulous
 """
 
 # System  Imports
@@ -12,10 +12,10 @@ import re
 # External Imports
 from setuptools import find_packages, setup
 
-PACKAGE_NAME = "module_goes_here"
-URL = "https://github.com/3amigos-dev/3amigos-py"
-GITHUB_ORG = "3amigos-dev"
-GITHUB_REPO = "3amigos-py"
+PACKAGE_NAME = "meticulous"
+URL = "https://github.com/timgates42/meticulous"
+GITHUB_ORG = "timgates42"
+GITHUB_REPO = "meticulous"
 RE_SUB = "(https://github.com/%s/%s/blob/master/\\g<1>)" % (GITHUB_ORG, GITHUB_REPO)
 
 
@@ -52,10 +52,10 @@ def read_version():
 setup(
     name=PACKAGE_NAME,
     version=read_version(),
-    author="name_goes_here",
-    author_email="email@goes.here",
-    maintainer="name_goes_here",
-    maintainer_email="email@goes.here",
+    author="Tim Gates",
+    author_email="tim.gates@iress.com",
+    maintainer="Tim Gates",
+    maintainer_email="tim.gates@iress.com",
     packages=find_packages(exclude=["tests"]),
     license="GPLv3+",
     description=load_include("short_description.txt")
@@ -64,7 +64,7 @@ setup(
     .strip(),
     long_description=load_include("README.md", transform=True),
     long_description_content_type="text/markdown",
-    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
+    python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
     test_suite="tests",
     test_requires=[
         elem.strip()
@@ -85,10 +85,10 @@ setup(
             "Programming Language :: Python :: 2",
             "Programming Language :: Python :: 2.7",
             "Programming Language :: Python :: 3",
-            "Programming Language :: Python :: 3.4",
             "Programming Language :: Python :: 3.5",
             "Programming Language :: Python :: 3.6",
             "Programming Language :: Python :: 3.7",
+            "Programming Language :: Python :: 3.8",
             "Programming Language :: Python :: Implementation :: CPython",
             "Programming Language :: Python :: Implementation :: PyPy",
             "Operating System :: OS Independent",

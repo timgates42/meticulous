@@ -1,5 +1,5 @@
 <!--
-Thank you for your contribution to the module_goes_here repository.
+Thank you for your contribution to the meticulous repository.
 Your code will need to pass the automated checks before merging.
 Before submitting this PR, please make sure the follow checks are done if
 applicable, also if they are applicable move them out of this comment into the

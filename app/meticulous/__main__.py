@@ -1,7 +1,7 @@
 """
 Module load handler for execution via:
 
-python -m module_goes_here
+python -m meticulous
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -13,7 +13,7 @@ def main():
     print(
         """\
 For more information view the online documentation at:
-https://module_goes_here.readthedocs.io/en/latest/
+https://meticulous.readthedocs.io/en/latest/
 """
     )
 

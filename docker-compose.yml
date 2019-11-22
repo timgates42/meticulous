@@ -3,7 +3,7 @@ version: '3.7'
 services:
   # Service image
   app:
-    image: module_goes_here:latest
+    image: meticulous:latest
     build: app
     environment:
       - HAS_JOSH_K_SEAL_OF_APPROVAL

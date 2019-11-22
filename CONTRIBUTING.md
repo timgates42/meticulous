@@ -7,7 +7,7 @@ in all your interactions with the project.
 
 ## Member Responsibilities
 
-First things first, the module_goes_here community welcomes all contributors with
+First things first, the meticulous community welcomes all contributors with
 good intentions and we will as much as possible respect your efforts to
 contribute. Specifically we will try and request changes where required and as
 last resort make changes on top of pull requests leaving your work with due

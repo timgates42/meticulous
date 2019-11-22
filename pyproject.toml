@@ -1,4 +1,4 @@
 [tool.towncrier]
-    package = "module_goes_here"
+    package = "meticulous"
     package_dir = "app"
     filename = "NEWS.rst"
