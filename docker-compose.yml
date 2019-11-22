@@ -1,0 +1,67 @@
+---
+version: '3.7'
+services:
+  # Service image
+  app:
+    image: module_goes_here:latest
+    build: app
+    environment:
+      - HAS_JOSH_K_SEAL_OF_APPROVAL
+      - CI
+      - CONTINUOUS_INTEGRATION
+      - TRAVIS
+      - TRAVIS_ALLOW_FAILURE
+      - TRAVIS_APP_HOST
+      - TRAVIS_APT_PROXY
+      - TRAVIS_ARCH
+      - TRAVIS_BRANCH
+      - TRAVIS_BUILD_DIR
+      - TRAVIS_BUILD_ID
+      - TRAVIS_BUILD_NUMBER
+      - TRAVIS_BUILD_STAGE_NAME
+      - TRAVIS_BUILD_WEB_URL
+      - TRAVIS_CMD
+      - TRAVIS_COMMIT
+      - TRAVIS_COMMIT_MESSAGE
+      - TRAVIS_COMMIT_RANGE
+      - TRAVIS_DIST
+      - TRAVIS_ENABLE_INFRA_DETECTION
+      - TRAVIS_EVENT_TYPE
+      - TRAVIS_HOME
+      - TRAVIS_INFRA
+      - TRAVIS_INIT
+      - TRAVIS_INTERNAL_RUBY_REGEX
+      - TRAVIS_JOB_ID
+      - TRAVIS_JOB_NAME
+      - TRAVIS_JOB_NUMBER
+      - TRAVIS_JOB_WEB_URL
+      - TRAVIS_LANGUAGE
+      - TRAVIS_OSX_IMAGE
+      - TRAVIS_OS_NAME
+      - TRAVIS_PRE_CHEF_BOOTSTRAP_TIME
+      - TRAVIS_PULL_REQUEST
+      - TRAVIS_PULL_REQUEST_BRANCH
+      - TRAVIS_PULL_REQUEST_SHA
+      - TRAVIS_PULL_REQUEST_SLUG
+      - TRAVIS_REPO_SLUG
+      - TRAVIS_ROOT
+      - TRAVIS_SECURE_ENV_VARS
+      - TRAVIS_STACK_FEATURES
+      - TRAVIS_STACK_JOB_BOARD_REGISTER
+      - TRAVIS_STACK_LANGUAGES
+      - TRAVIS_STACK_NAME
+      - TRAVIS_STACK_NODE_ATTRIBUTES
+      - TRAVIS_STACK_TIMESTAMP
+      - TRAVIS_SUDO
+      - TRAVIS_TAG
+      - TRAVIS_TEST_RESULT
+      - TRAVIS_TIMER_ID
+      - TRAVIS_TIMER_START_TIME
+      - TRAVIS_TMPDIR
+      - TRAVIS_UID
+      - USER
+      - USERNAME
+    volumes:
+      - type: bind
+        source: .
+        target: /workspace

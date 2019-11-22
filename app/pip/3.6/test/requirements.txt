@@ -1,0 +1,14 @@
+bandit
+dlint
+flake8
+isort
+mock
+pylint
+pytest
+pytest-azurepipelines42
+pytest-cov
+pytest-xdist
+safety
+twine
+wheel
+
