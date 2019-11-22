@@ -10,7 +10,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/timgates42/meticulous/badge.svg)](https://coveralls.io/github/timgates42/meticulous/)
 [![Black](https://camo.githubusercontent.com/28a51fe3a2c05048d8ca8ecd039d6b1619037326/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f636f64652532307374796c652d626c61636b2d3030303030302e737667)](https://github.com/psf/black)
 
-Automate process of forking and running pyspelling on a repostitory to locate typos.
+Automate process of forking and running pyspelling on a repository to locate typos.
 
 More details can be found in the
 [Online Documentation.](https://meticulous.readthedocs.io/en/latest/)

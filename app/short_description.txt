@@ -1,1 +1,1 @@
-Automate process of forking and running pyspelling on a repostitory to locate typos.
+Automate process of forking and running pyspelling on a repository to locate typos.
