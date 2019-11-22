@@ -1,7 +1,7 @@
 {
     "project_name": "meticulous",
     "project_long_name": "{{ cookiecutter.project_name }}",
-    "project_description": "Automate process of forking and running pyspelling on a repostitory to locate typos.",
+    "project_description": "Automate process of forking and running pyspelling on a repository to locate typos.",
     "project_long_description": "{{ cookiecutter.project_description }}",
     "project_slug":  "{{ cookiecutter.project_name.lower()|replace(' ', '_')|replace('-', '_')|replace('.', '_')|trim() }}",
     "github_org": "timgates42",
