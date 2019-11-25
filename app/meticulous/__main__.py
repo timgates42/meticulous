@@ -55,7 +55,7 @@ def check_url(url):
 
 def get_all_markdown_github_links(url):
     """
-    Obtain and filter markdown links to github repos.
+    Obtain and filter markdown links to repositories.
     """
     links = get_all_markdown_links(url)
     for link in links:
