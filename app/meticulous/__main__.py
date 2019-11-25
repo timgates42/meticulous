@@ -59,8 +59,11 @@ def get_all_markdown_github_links(url):
     """
     links = get_all_markdown_links(url)
     for link in links:
-        if link.startswith("https://github.com/"):
-            yield link
+        mobj = re.match(
+            "https://github.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)(?:/|$)", link
+        )
+        if mobj:
+            yield mobj.group(1)
 
 
 def get_all_markdown_links(url):
