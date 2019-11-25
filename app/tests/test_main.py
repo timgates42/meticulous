@@ -5,8 +5,8 @@ meticulous.__main__
 """
 from __future__ import absolute_import, division, print_function
 
-from click.testing import CliRunner
 import pytest
+from click.testing import CliRunner
 
 from meticulous.__main__ import main
 
