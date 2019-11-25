@@ -5,6 +5,7 @@ meticulous.__main__
 """
 from __future__ import absolute_import, division, print_function
 
+from click.testing import CliRunner
 import pytest
 
 from meticulous.__main__ import main
@@ -17,8 +18,6 @@ def test_main(args):
     executes successfully with a result of `None`
     """
     # Setup
-    from click.testing import CliRunner
-
     runner = CliRunner()
     # Exercise
     fullargs = list(args)
