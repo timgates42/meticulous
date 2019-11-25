@@ -5,9 +5,9 @@ meticulous.__main__
 """
 from __future__ import absolute_import, division, print_function
 
-from meticulous.__main__ import main
-
 import pytest
+
+from meticulous.__main__ import main
 
 
 @pytest.mark.parametrize("args,", [("bogus",)])
