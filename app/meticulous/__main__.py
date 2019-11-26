@@ -5,10 +5,12 @@ python -m meticulous
 """
 from __future__ import absolute_import, division, print_function
 
+import sys
+
 import click
 
+from meticulous._github import check_forked, fork
 from meticulous._sources import obtain_sources
-from meticulous._github import check_forked
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -43,6 +45,9 @@ def run_invocation():
         print(f"Checking {orgrepo}")
         if not check_forked(repo):
             print(f"Have not forked {orgrepo}")
+            print(f"Forking {orgrepo}")
+            fork(orgrepo)
+            sys.exit(0)
 
 
 if __name__ == "__main__":

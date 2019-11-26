@@ -26,5 +26,14 @@ def check_forked(repository):
         return False
 
 
+def fork(orgrepo):
+    """
+    Use the API to fork a repo
+    """
+    api = get_api()
+    repo = api.get_repo(orgrepo)
+    repo.fork()
+
+
 if __name__ == "__main__":
     print(check_forked("pylint"))
