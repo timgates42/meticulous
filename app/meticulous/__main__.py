@@ -39,7 +39,7 @@ def run_invocation():
     Execute the invocation
     """
     for orgrepo in obtain_sources():
-        _, repo = orgrepo.split('/', 1)
+        _, repo = orgrepo.split("/", 1)
         print(f"Checking {orgrepo}")
         if not check_forked(repo):
             print(f"Have not forked {orgrepo}")

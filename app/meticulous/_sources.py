@@ -56,8 +56,8 @@ def download_url(url):
     """
     Obtain the URL content
     """
-    if os.path.isfile('README.md.txt'):
-        with io.open('README.md.txt', 'r', encoding='utf-8') as fobj:
+    if os.path.isfile("README.md.txt"):
+        with io.open("README.md.txt", "r", encoding="utf-8") as fobj:
             return fobj.read()
     http = urllib3.PoolManager()
     resp = http.request("GET", url)
