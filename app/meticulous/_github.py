@@ -19,7 +19,12 @@ def check_forked(repository):
     Use the API to check for an existing fork
     """
     api = get_api()
-    return dir(api), repository
+    user_org = api.get_user().login
+    try:
+        repo = api.get_repo(f"{user_org}/{repository}")
+        return True
+    except github.GithubException:
+        return False
 
 
 if __name__ == "__main__":
