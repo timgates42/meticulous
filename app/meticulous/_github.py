@@ -3,7 +3,6 @@ Handlers for checking existing forks and creating new ones.
 """
 
 import github
-
 from meticulous._secrets import load_api_key
 
 
@@ -21,7 +20,7 @@ def check_forked(repository):
     api = get_api()
     user_org = api.get_user().login
     try:
-        repo = api.get_repo(f"{user_org}/{repository}")
+        api.get_repo(f"{user_org}/{repository}")
         return True
     except github.GithubException:
         return False
