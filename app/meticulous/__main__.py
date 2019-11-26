@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function
 import click
 
 from meticulous._sources import obtain_sources
+from meticulous._github import check_forked
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -37,7 +38,11 @@ def run_invocation():
     """
     Execute the invocation
     """
-    print(list(obtain_sources()))
+    for orgrepo in obtain_sources():
+        _, repo = orgrepo.split('/', 1)
+        print(f"Checking {orgrepo}")
+        if not check_forked(repo):
+            print(f"Have not forked {orgrepo}")
 
 
 if __name__ == "__main__":

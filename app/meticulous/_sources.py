@@ -3,6 +3,8 @@ Obtain a list of repositories to check
 """
 from __future__ import absolute_import, division, print_function
 
+import io
+import os
 import re
 
 import urllib3
@@ -54,6 +56,9 @@ def download_url(url):
     """
     Obtain the URL content
     """
+    if os.path.isfile('README.md.txt'):
+        with io.open('README.md.txt', 'r', encoding='utf-8') as fobj:
+            return fobj.read()
     http = urllib3.PoolManager()
     resp = http.request("GET", url)
     return resp.data.decode("utf-8")
