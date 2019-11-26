@@ -10,7 +10,7 @@ def load_api_key():
     Used to load the GitHub API Token
     """
     output = subprocess.check_output(["pass", "show", "github-api-token"])
-    return output.decode('ascii').strip()
+    return output.decode("ascii").strip()
 
 
 if __name__ == "__main__":
