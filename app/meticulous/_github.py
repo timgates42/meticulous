@@ -32,7 +32,7 @@ def fork(orgrepo):
     """
     api = get_api()
     repo = api.get_repo(orgrepo)
-    repo.fork()
+    repo.create_fork()
 
 
 if __name__ == "__main__":
