@@ -11,5 +11,9 @@ if [ ${#FILES[@]} -ne 0 ] ; then
     git checkout "${FILES[@]}"
 fi
 git checkout -- \
+ app/.gitignore \
+ app/meticulous \
+ app/tests \
  docs/index.rst \
- logo.png
+ logo.png \
+app/Dockerfile app/setup.py
