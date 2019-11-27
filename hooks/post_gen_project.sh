@@ -15,4 +15,5 @@ git checkout -- \
  app/meticulous \
  app/tests \
  docs/index.rst \
- logo.png
+ logo.png \
+app/Dockerfile app/setup.py

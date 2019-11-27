@@ -13,6 +13,6 @@ rm -rf dist build
 for PYVER in ${PYTHONVERS} ; do
   "python${PYVER}" setup.py sdist bdist_wheel
 done
-python3.7 -m twine check dist/*
-python3.7 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-python3.7 -m twine upload dist/*
+python3.8 -m twine check dist/*
+python3.8 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+python3.8 -m twine upload dist/*

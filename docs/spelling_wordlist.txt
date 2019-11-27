@@ -81,6 +81,7 @@ PRTGDevice
 PRTGSensor
 py
 PyEnchant
+PyGithub
 pylint
 PyPi
 PyPI

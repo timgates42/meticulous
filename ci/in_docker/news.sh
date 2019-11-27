@@ -8,6 +8,6 @@ BASEDIR="$( dirname "$( dirname "${THISDIR}" )" )"
 # shellcheck source=/dev/null
 source "${BASEDIR}/ci/in_docker/prepare.sh"
 
-PYVER=3.7
+PYVER=3.8
 cd "${BASEDIR}"
 "python${PYVER}" -m towncrier "$@"
