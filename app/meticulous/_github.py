@@ -28,7 +28,7 @@ def check_forked(repository):
 
 def fork(orgrepo):
     """
-    Use the API to fork a repo
+    Use the API to fork a repository
     """
     api = get_api()
     repo = api.get_repo(orgrepo)
