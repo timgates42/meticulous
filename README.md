@@ -29,6 +29,9 @@ $ pip install meticulous
 
 
 
+## Prerequisites:
+- PyGithub
+
 
 ## Download from PyPI.org
 
