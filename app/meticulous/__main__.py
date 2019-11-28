@@ -5,11 +5,14 @@ python -m meticulous
 """
 from __future__ import absolute_import, division, print_function
 
+import io
 import os
 import sys
 from pathlib import Path
 
 import click
+from plumbum import FG, local
+from spelling.check import check
 
 from meticulous._github import check_forked, checkout, fork
 from meticulous._sources import obtain_sources
@@ -51,6 +54,7 @@ def run_invocation(target):
     if not target.is_dir():
         print(f"Target {target} is not a directory.", file=sys.stderr)
         sys.exit(1)
+    editor = local['/usr/bin/vim']
     for orgrepo in obtain_sources():
         _, repo = orgrepo.split("/", 1)
         print(f"Checking {orgrepo}")
@@ -60,6 +64,15 @@ def run_invocation(target):
             fork(orgrepo)
             print(f"Checkout {repo}")
             checkout(repo, target)
+            repodir = target / repo
+            print(f"Running spell check on {repodir}")
+            spellpath = repodir / "spelling.txt"
+            print(f"Spelling output {spellpath}")
+            with io.open(spellpath, "w", encoding="utf-8") as fobj:
+                os.chdir(repodir)
+                check(True, True, None, fobj)
+                print("Opening editor")
+                _ = editor["spelling.txt"] & FG
             sys.exit(0)
 
 
