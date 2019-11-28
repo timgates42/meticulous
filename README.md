@@ -31,6 +31,7 @@ $ pip install meticulous
 
 ## Prerequisites:
 - PyGithub
+- plumbum
 
 
 ## Download from PyPI.org
