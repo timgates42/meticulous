@@ -4,9 +4,9 @@ Handlers for checking existing forks and creating new ones.
 
 import sys
 
+import github
 from plumbum import FG, local
 
-import github
 from meticulous._secrets import load_api_key
 
 
