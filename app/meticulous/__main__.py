@@ -11,7 +11,7 @@ from pathlib import Path
 
 import click
 
-from meticulous._github import check_forked, fork, checkout
+from meticulous._github import check_forked, checkout, fork
 from meticulous._sources import obtain_sources
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
@@ -21,7 +21,7 @@ __version__ = "0.1"
 
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.version_option(version=__version__)
-@click.option('--target', nargs=1)
+@click.option("--target", nargs=1)
 @click.pass_context
 def main(ctxt, target):
     """
@@ -32,7 +32,7 @@ def main(ctxt, target):
 
 
 @main.command()
-@click.option('--target', nargs=1)
+@click.option("--target", nargs=1)
 def invoke(target):
     """
     Primary command handler
