@@ -2,8 +2,11 @@
 Handlers for checking existing forks and creating new ones.
 """
 
-import github
+import sys
 
+from plumbum import FG, local
+
+import github
 from meticulous._secrets import load_api_key
 
 
@@ -34,6 +37,23 @@ def fork(orgrepo):
     api = get_api()
     repo = api.get_repo(orgrepo)
     repo.create_fork()
+
+
+def checkout(repo, target):
+    """
+    Clone a repository to under the target path
+    if it does not already exist.
+    """
+    clone_target = target / repo
+    if clone_target.exists():
+        print(f"{clone_target} already exists, clone aborted.", file=sys.stderr)
+        sys.exit(1)
+    git = local["/usr/bin/git"]
+    with local.cwd(str(target)):
+        _ = (
+            git["clone", "ssh://git@github.org/{user_org}/{repo}", str(clone_target)]
+            & FG
+        )
 
 
 if __name__ == "__main__":
