@@ -44,6 +44,8 @@ def checkout(repo, target):
     Clone a repository to under the target path
     if it does not already exist.
     """
+    api = get_api()
+    user_org = api.get_user().login
     clone_target = target / repo
     if clone_target.exists():
         print(f"{clone_target} already exists, clone aborted.", file=sys.stderr)
@@ -51,7 +53,7 @@ def checkout(repo, target):
     git = local["/usr/bin/git"]
     with local.cwd(str(target)):
         _ = (
-            git["clone", "ssh://git@github.org/{user_org}/{repo}", str(clone_target)]
+            git["clone", f"ssh://git@github.com/{user_org}/{repo}", str(clone_target)]
             & FG
         )
 
