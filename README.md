@@ -32,6 +32,7 @@ $ pip install meticulous
 ## Prerequisites:
 - PyGithub
 - plumbum
+- spelling
 
 
 ## Download from PyPI.org
