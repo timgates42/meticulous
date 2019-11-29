@@ -54,7 +54,7 @@ def run_invocation(target):
     if not target.is_dir():
         print(f"Target {target} is not a directory.", file=sys.stderr)
         sys.exit(1)
-    editor = local['/usr/bin/vim']
+    editor = local["/usr/bin/vim"]
     for orgrepo in obtain_sources():
         _, repo = orgrepo.split("/", 1)
         print(f"Checking {orgrepo}")
