@@ -8,6 +8,7 @@ import github
 from plumbum import FG, local
 
 from meticulous._secrets import load_api_key
+from meticulous._storage import get_value, set_value
 
 
 def get_api():
@@ -18,6 +19,19 @@ def get_api():
 
 
 def check_forked(repository):
+    """
+    Check cache to check for an existing fork
+    """
+    key = f"forked|{repository}"
+    value = get_value(key)
+    if value is None:
+        result = _check_forked(repository)
+        value = "Y" if result else "N"
+        set_value(key, value)
+    return value == "Y"
+
+
+def _check_forked(repository):
     """
     Use the API to check for an existing fork
     """
@@ -37,6 +51,9 @@ def fork(orgrepo):
     api = get_api()
     repo = api.get_repo(orgrepo)
     repo.create_fork()
+    repository = orgrepo.split("/", 1)[-1]
+    key = f"forked|{repository}"
+    set_value(key, "Y")
 
 
 def checkout(repo, target):
