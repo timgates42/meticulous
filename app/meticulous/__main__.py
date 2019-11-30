@@ -16,6 +16,7 @@ from spelling.check import check
 
 from meticulous._github import check_forked, checkout, fork
 from meticulous._sources import obtain_sources
+from meticulous._storage import prepare
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -47,6 +48,7 @@ def run_invocation(target):
     """
     Execute the invocation
     """
+    prepare()
     if target is None:
         target = Path(os.environ["HOME"]) / "data"
     else:
