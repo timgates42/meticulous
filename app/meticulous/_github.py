@@ -44,6 +44,15 @@ def _check_forked(repository):
         return False
 
 
+def is_archived(orgrepo):
+    """
+    Check if a repository is archived
+    """
+    api = get_api()
+    repo = api.get_repo(orgrepo)
+    return repo.archived
+
+
 def fork(orgrepo):
     """
     Use the API to fork a repository

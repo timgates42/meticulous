@@ -12,11 +12,11 @@ from pathlib import Path
 
 import click
 from plumbum import FG, local
-from spelling.check import check
 
-from meticulous._github import check_forked, checkout, fork
+from meticulous._github import check_forked, checkout, fork, is_archived
 from meticulous._sources import obtain_sources
 from meticulous._storage import prepare
+from spelling.check import check
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
@@ -44,6 +44,14 @@ def invoke(target):
     run_invocation(target)
 
 
+@main.command()
+def test():
+    """
+    Test command handler
+    """
+    print(is_archived("kennethreitz/clint"))
+
+
 def run_invocation(target):
     """
     Execute the invocation
@@ -64,6 +72,9 @@ def run_invocation(target):
             print(f"Have not forked {orgrepo}")
             print(f"Forking {orgrepo}")
             fork(orgrepo)
+            if is_archived(orgrepo):
+                print(f"Skipping archived repo {orgrepo}")
+                continue
             print(f"Checkout {repo}")
             checkout(repo, target)
             repodir = target / repo
@@ -73,8 +84,8 @@ def run_invocation(target):
             with io.open(spellpath, "w", encoding="utf-8") as fobj:
                 os.chdir(repodir)
                 check(True, True, None, fobj)
-                print("Opening editor")
-                _ = editor["spelling.txt"] & FG
+            print("Opening editor")
+            _ = editor["spelling.txt"] & FG
             sys.exit(0)
 
 
