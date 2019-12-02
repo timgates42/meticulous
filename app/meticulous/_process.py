@@ -9,12 +9,12 @@ import sys
 from pathlib import Path
 
 from plumbum import FG, local
-from PyInquirer import prompt
+from spelling.check import check
 
 from meticulous._github import check_forked, checkout, fork, is_archived
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
-from spelling.check import check
+from PyInquirer import prompt
 
 MAIN_MENU = [
     {
