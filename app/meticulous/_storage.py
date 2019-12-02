@@ -2,6 +2,7 @@
 Record current progress to avoid reprocessing
 """
 
+import json
 import pathlib
 import sqlite3
 import sys
@@ -38,6 +39,22 @@ def set_value(key, value):
     sql = "INSERT INTO config ( key, value ) VALUES (?, ?)"
     con.execute(sql, (key, value))
     con.commit()
+
+
+def get_json_value(key, deflt=None):
+    """
+    Deserialize and load
+    """
+    deflt = json.dumps(deflt)
+    jsonval = get_value(key, deflt=deflt)
+    return json.loads(jsonval)
+
+
+def set_json_value(key, value):
+    """
+    Serialize and save
+    """
+    set_value(key, json.dumps(value))
 
 
 def check_table_exists(con, table_name):
