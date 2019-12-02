@@ -82,7 +82,7 @@ PRTGSensor
 py
 PyEnchant
 PyGithub
-PyIncquirer
+PyInquirer
 pylint
 PyPi
 PyPI
