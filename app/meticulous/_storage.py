@@ -43,7 +43,7 @@ def set_value(key, value):
 
 def get_json_value(key, deflt=None):
     """
-    Deserialize and load
+    Load a json value for the specified key
     """
     deflt = json.dumps(deflt)
     jsonval = get_value(key, deflt=deflt)
@@ -52,14 +52,14 @@ def get_json_value(key, deflt=None):
 
 def set_json_value(key, value):
     """
-    Serialize and save
+    Serialize and save a json value
     """
     set_value(key, json.dumps(value))
 
 
 def check_table_exists(con, table_name):
     """
-    Look in sqlite_master to see if table exists
+    Look in the database to see if table exists
     """
     sql = "SELECT name FROM sqlite_master WHERE" " type='table' AND name=?"
     for _ in con.execute(sql, (table_name,)):
@@ -69,7 +69,7 @@ def check_table_exists(con, table_name):
 
 def get_db():
     """
-    Connect to sqlite3 db
+    Connect to the database
     """
     dbpath = get_basedir() / "sqlite.db"
     return sqlite3.connect(str(dbpath))
