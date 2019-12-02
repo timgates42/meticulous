@@ -9,12 +9,14 @@ import sys
 from pathlib import Path
 
 from plumbum import FG, local
-from spelling.check import check
+from spelling.check import check  # noqa=I001
 
 from meticulous._github import check_forked, checkout, fork, is_archived
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
-from PyInquirer import prompt
+from PyInquirer import (  # noqa=I001 # pylint: disable=wrong-import-order
+    prompt,  # noqa=I001
+)  # noqa=I001
 
 MAIN_MENU = [
     {
@@ -23,6 +25,7 @@ MAIN_MENU = [
         "message": "What do you want to do?",
         "choices": [
             "add a new repository",
+            "manually add a new repository",
             "examine a repository",
             "remove a repository",
             "- quit -",
@@ -57,6 +60,8 @@ def run_invocation(target):
         try:
             if option == "examine a repository":
                 examine_repo_selection()
+            elif option == "manually add a new repository":
+                manually_add_new_repo(target)
             elif option == "remove a repository":
                 remove_repo_selection()
             elif option == "add a new repository":
@@ -94,6 +99,7 @@ def pick_repo():
     Select an available repository
     """
     repository_map = get_json_value("repository_map", {})
+    print(repr(repository_map))
     if not repository_map:
         print("No repositories available.", file=sys.stderr)
         raise NoRepoException()
@@ -117,6 +123,23 @@ def examine_repo(repodir):
     editor = local["/usr/bin/vim"]
     with local.cwd(repodir):
         _ = editor["spelling.txt"] & FG
+
+
+def manually_add_new_repo(target):
+    """
+    Allow entry of a new repository manually
+    """
+    choice = dict(SELECT_REPO)
+    choices = os.listdir(target)
+    choices.append("- quit -")
+    choice["choices"] = choices
+    answers = prompt([choice])
+    option = answers["option"]
+    if option == "- quit -":
+        raise NoRepoException()
+    repository_map = get_json_value("repository_map", {})
+    repository_map[option] = os.path.join(target, option)
+    set_json_value("repository_map", repository_map)
 
 
 def add_new_repo(target):
