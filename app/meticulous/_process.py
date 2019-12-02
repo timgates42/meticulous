@@ -21,15 +21,22 @@ MAIN_MENU = [
         "type": "list",
         "name": "option",
         "message": "What do you want to do?",
-        "choices": ["add a new repository", "examine a repository"],
+        "choices": [
+            "add a new repository",
+            "examine a repository",
+            "remove a repository",
+            "- quit -",
+        ],
     }
 ]
 
-SELECT_REPO = {
-    "type": "list",
-    "name": "option",
-    "message": "Which Repository?",
-}
+SELECT_REPO = {"type": "list", "name": "option", "message": "Which Repository?"}
+
+
+class NoRepoException(Exception):
+    """
+    Raised if no repositories are available/selected
+    """
 
 
 def run_invocation(target):
@@ -44,26 +51,62 @@ def run_invocation(target):
         print(f"Target {target} is not a directory.", file=sys.stderr)
         sys.exit(1)
     prepare()
-    answers = prompt(MAIN_MENU)
-    option = answers["option"]
-    if option == "examine a repository":
-        examine_repo_selection()
-    elif option == "add a new repository":
-        add_new_repo(target)
-    else:
-        print(f"Unknown option {option}.", file=sys.stderr)
-        sys.exit(1)
+    while True:
+        answers = prompt(MAIN_MENU)
+        option = answers["option"]
+        try:
+            if option == "examine a repository":
+                examine_repo_selection()
+            elif option == "remove a repository":
+                remove_repo_selection()
+            elif option == "add a new repository":
+                add_new_repo(target)
+            elif option == "- quit -":
+                print("Goodbye.")
+                return
+            else:
+                print(f"Unknown option {option}.", file=sys.stderr)
+                sys.exit(1)
+        except NoRepoException:
+            continue
+
+
+def remove_repo_selection():
+    """
+    Select an available repository to remove
+    """
+    repo, _ = pick_repo()
+    repository_map = get_json_value("repository_map", {})
+    del repository_map[repo]
+    set_json_value("repository_map", repository_map)
 
 
 def examine_repo_selection():
     """
+    Select an available repository to examine
+    """
+    _, repodir = pick_repo()
+    examine_repo(repodir)
+
+
+def pick_repo():
+    """
     Select an available repository
     """
     repository_map = get_json_value("repository_map", {})
+    if not repository_map:
+        print("No repositories available.", file=sys.stderr)
+        raise NoRepoException()
     choice = dict(SELECT_REPO)
-    choice["choices"] = repository_map.keys()
+    choices = list(repository_map.keys())
+    choices.append("- quit -")
+    choice["choices"] = choices
     answers = prompt([choice])
-    print(repr(answers))
+    option = answers["option"]
+    if option == "- quit -":
+        raise NoRepoException()
+    repodir = repository_map[option]
+    return option, repodir
 
 
 def examine_repo(repodir):
