@@ -25,6 +25,12 @@ MAIN_MENU = [
     }
 ]
 
+SELECT_REPO = {
+    "type": "list",
+    "name": "option",
+    "message": "Which Repository?",
+}
+
 
 def run_invocation(target):
     """
@@ -54,7 +60,10 @@ def examine_repo_selection():
     Select an available repository
     """
     repository_map = get_json_value("repository_map", {})
-    print(repr(repository_map))
+    choice = dict(SELECT_REPO)
+    choice["choices"] = repository_map.keys()
+    answers = prompt([choice])
+    print(repr(answers))
 
 
 def examine_repo(repodir):
