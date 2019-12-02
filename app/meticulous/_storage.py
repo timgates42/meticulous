@@ -43,7 +43,7 @@ def set_value(key, value):
 
 def get_json_value(key, deflt=None):
     """
-    Load a json value for the specified key
+    Load a Json value for the specified key
     """
     deflt = json.dumps(deflt)
     jsonval = get_value(key, deflt=deflt)
@@ -52,7 +52,7 @@ def get_json_value(key, deflt=None):
 
 def set_json_value(key, value):
     """
-    Serialize and save a json value
+    Serialize and save a Json value
     """
     set_value(key, json.dumps(value))
 
