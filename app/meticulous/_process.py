@@ -56,7 +56,7 @@ def run_invocation(target):
     prepare()
     while True:
         answers = prompt(MAIN_MENU)
-        option = answers["option"]
+        option = answers.get("option", "- quit -")
         try:
             if option == "examine a repository":
                 examine_repo_selection()
@@ -99,7 +99,6 @@ def pick_repo():
     Select an available repository
     """
     repository_map = get_json_value("repository_map", {})
-    print(repr(repository_map))
     if not repository_map:
         print("No repositories available.", file=sys.stderr)
         raise NoRepoException()
@@ -108,7 +107,7 @@ def pick_repo():
     choices.append("- quit -")
     choice["choices"] = choices
     answers = prompt([choice])
-    option = answers["option"]
+    option = answers.get("option", "- quit -")
     if option == "- quit -":
         raise NoRepoException()
     repodir = repository_map[option]
@@ -130,11 +129,11 @@ def manually_add_new_repo(target):
     Allow entry of a new repository manually
     """
     choice = dict(SELECT_REPO)
-    choices = os.listdir(target)
+    choices = sorted(os.listdir(target))
     choices.append("- quit -")
     choice["choices"] = choices
     answers = prompt([choice])
-    option = answers["option"]
+    option = answers.get("option", "- quit -")
     if option == "- quit -":
         raise NoRepoException()
     repository_map = get_json_value("repository_map", {})
