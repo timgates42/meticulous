@@ -1,3 +1,0 @@
-pyspelling
-wcmatch<5.0
-resplendent==0.2.3

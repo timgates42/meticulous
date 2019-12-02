@@ -33,6 +33,7 @@ $ pip install meticulous
 - PyGithub
 - plumbum
 - spelling
+- PyInquirer
 
 
 ## Download from PyPI.org
