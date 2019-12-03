@@ -19,8 +19,6 @@ from meticulous._storage import get_json_value, prepare, set_json_value
 
 MAIN_MENU = [
     {
-        "type": "list",
-        "name": "option",
         "message": "What do you want to do?",
         "choices": [
             "add a new repository",
@@ -34,16 +32,26 @@ MAIN_MENU = [
     }
 ]
 
-SAVE_QUIT_MENU = [
-    {
-        "type": "list",
-        "name": "option",
-        "message": "What do you want to do?",
-        "choices": ["save", "- quit -"],
-    }
-]
 
-SELECT_REPO = {"type": "list", "name": "option", "message": "Which Repository?"}
+def make_simple_choice(choices, message="What do you want to do?"):
+    """
+    Make a choice using a simple {key: key} list of choices
+    """
+    return make_choice({choice: choice for choice in choices}, message=message)
+
+
+def make_choice(choices, message="What do you want to do?"):
+    """
+    Call pyinquirer/prompt-toolkit to make a choice
+    """
+    choicelist = sorted(list(choices.keys()))
+    choicelist.append("- quit -")
+    menu = [
+        {"type": "list", "name": "option", "message": message, "choices": choicelist}
+    ]
+    answers = prompt(menu)
+    option = answers.get("option", "- quit -")
+    return choices.get(option)
 
 
 class ProcessingFailed(Exception):
@@ -71,8 +79,6 @@ def run_invocation(target):
         sys.exit(1)
     prepare()
     while True:
-        answers = prompt(MAIN_MENU)
-        option = answers.get("option", "- quit -")
         try:
             lookup = {
                 "examine a repository": examine_repo_selection,
@@ -82,15 +88,11 @@ def run_invocation(target):
                 "prepare a change": prepare_a_change,
                 "prepare an issue": prepare_an_issue,
             }
-            handler = lookup.get(option)
-            if handler is not None:
-                handler(target)
-            elif option == "- quit -":
+            handler = make_choice(lookup)
+            if handler is None:
                 print("Goodbye.")
                 return
-            else:
-                print(f"Unknown option {option}.", file=sys.stderr)
-                sys.exit(1)
+            handler(target)
         except ProcessingFailed:
             continue
 
@@ -125,7 +127,13 @@ def prepare_an_issue(target):  # pylint: disable=unused-argument
     """
     Select an available repository to prepare a change
     """
-    _, repodir = pick_repo_save()
+    reponame, repodir = pick_repo_save()
+    issue_template = Path(repodir) / ".github" / "ISSUE_TEMPLATE"
+    has_issue_template = issue_template.is_dir()
+    print(
+        f"{reponame} {'HAS' if has_issue_template else 'does not have'}"
+        f" an issue template"
+    )
     print(repr(repodir))
 
 
@@ -136,11 +144,10 @@ def add_change_for_repo(repodir):
     """
     del_word, add_word, file_paths = get_typo(repodir)
     print(f"Changing {del_word} to {add_word} in {', '.join(file_paths)}")
-    answers = prompt(SAVE_QUIT_MENU)
-    option = answers.get("option", "- quit -")
+    option = make_simple_choice(["save"], "Do you want to save?")
     if option == "save":
         saves = get_json_value("repository_saves", {})
-        reponame = os.path.basename(repodir)
+        reponame = Path(repodir).name
         saves[reponame] = {
             "add_word": add_word,
             "del_word": del_word,
@@ -204,13 +211,8 @@ def pick_repo_common(key):
     if not repository_list:
         print("No repositories available.", file=sys.stderr)
         raise NoRepoException()
-    choice = dict(SELECT_REPO)
-    choices = list(repository_list.keys())
-    choices.append("- quit -")
-    choice["choices"] = choices
-    answers = prompt([choice])
-    option = answers.get("option", "- quit -")
-    if option == "- quit -":
+    option = make_simple_choice(repository_list, "Which Repository?")
+    if option is None:
         raise NoRepoException()
     repo_data = repository_list[option]
     return option, repo_data
@@ -230,16 +232,12 @@ def manually_add_new_repo(target):
     """
     Allow entry of a new repository manually
     """
-    choice = dict(SELECT_REPO)
     choices = sorted(os.listdir(target))
-    choices.append("- quit -")
-    choice["choices"] = choices
-    answers = prompt([choice])
-    option = answers.get("option", "- quit -")
-    if option == "- quit -":
+    option = make_simple_choice(choices, "Which Directory?")
+    if option is None:
         raise NoRepoException()
     repository_map = get_json_value("repository_map", {})
-    repository_map[option] = os.path.join(target, option)
+    repository_map[option] = str(Path(target) / option)
     set_json_value("repository_map", repository_map)
 
 
