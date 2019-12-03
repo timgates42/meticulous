@@ -5,6 +5,7 @@ from __future__ import absolute_import, division, print_function
 
 import io
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -26,6 +27,7 @@ MAIN_MENU = [
             "manually add a new repository",
             "examine a repository",
             "remove a repository",
+            "prepare a change",
             "- quit -",
         ],
     }
@@ -34,7 +36,13 @@ MAIN_MENU = [
 SELECT_REPO = {"type": "list", "name": "option", "message": "Which Repository?"}
 
 
-class NoRepoException(Exception):
+class ProcessingFailed(Exception):
+    """
+    Raised if processing needs to go back to the main menu
+    """
+
+
+class NoRepoException(ProcessingFailed):
     """
     Raised if no repositories are available/selected
     """
@@ -64,13 +72,15 @@ def run_invocation(target):
                 remove_repo_selection()
             elif option == "add a new repository":
                 add_new_repo(target)
+            elif option == "prepare a change":
+                prepare_a_change()
             elif option == "- quit -":
                 print("Goodbye.")
                 return
             else:
                 print(f"Unknown option {option}.", file=sys.stderr)
                 sys.exit(1)
-        except NoRepoException:
+        except ProcessingFailed:
             continue
 
 
@@ -90,6 +100,54 @@ def examine_repo_selection():
     """
     _, repodir = pick_repo()
     examine_repo(repodir)
+
+
+def prepare_a_change():
+    """
+    Select an available repository to prepare a change
+    """
+    _, repodir = pick_repo()
+    add_change_for_repo(repodir)
+
+
+def add_change_for_repo(repodir):
+    """
+    Work out the staged commit and prepare an issue and pull request based on
+    the change
+    """
+    del_word, add_word, file_paths = get_typo(repodir)
+    print(f"Changing {del_word} to {add_word} in {', '.join(file_paths)}")
+
+
+def get_typo(repodir):
+    """
+    Look in the staged commit for the typo.
+    """
+    git = local["/usr/bin/git"]
+    del_lines = []
+    add_lines = []
+    file_paths = []
+    with local.cwd(repodir):
+        output = git("diff", "--staged")
+        for line in output.splitlines():
+            if line.startswith('--- a/'):
+                file_path = line[len('--- a/'):]
+                file_paths.append(file_path)
+        for line in output.splitlines():
+            if line.startswith("- "):
+                del_lines.append(line[2:])
+            elif line.startswith("+ "):
+                add_lines.append(line[2:])
+    if len(del_lines) != 1 or len(add_lines) != 1:
+        print("Could not read diff", file=sys.stderr)
+        raise ProcessingFailed()
+    del_words = re.findall("\\S+", del_lines[0])
+    add_words = re.findall("\\S+", add_lines[0])
+    for del_word, add_word in zip(del_words, add_words):
+        if del_word != add_word:
+            return del_word, add_word, file_paths
+    print("Could not locate typo", file=sys.stderr)
+    raise ProcessingFailed()
 
 
 def pick_repo():
