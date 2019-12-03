@@ -9,14 +9,12 @@ import sys
 from pathlib import Path
 
 from plumbum import FG, local
+from PyInquirer import prompt
 from spelling.check import check  # noqa=I001
 
 from meticulous._github import check_forked, checkout, fork, is_archived
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
-from PyInquirer import (  # noqa=I001 # pylint: disable=wrong-import-order
-    prompt,  # noqa=I001
-)  # noqa=I001
 
 MAIN_MENU = [
     {
