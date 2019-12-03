@@ -33,6 +33,18 @@ MAIN_MENU = [
     }
 ]
 
+SAVE_QUIT_MENU = [
+    {
+        "type": "list",
+        "name": "option",
+        "message": "What do you want to do?",
+        "choices": [
+            "save",
+            "- quit -",
+        ],
+    }
+]
+
 SELECT_REPO = {"type": "list", "name": "option", "message": "Which Repository?"}
 
 
@@ -117,6 +129,16 @@ def add_change_for_repo(repodir):
     """
     del_word, add_word, file_paths = get_typo(repodir)
     print(f"Changing {del_word} to {add_word} in {', '.join(file_paths)}")
+    answers = prompt(SAVE_QUIT_MENU)
+    option = answers.get("option", "- quit -")
+    if option == 'save':
+        saves = get_json_value("repository_saves", {})
+        saves[repodir] = {
+            'add_word': add_word,
+            'del_word': del_word,
+            'file_paths': file_paths,
+        }
+        set_json_value("repository_saves", saves)
 
 
 def get_typo(repodir):
