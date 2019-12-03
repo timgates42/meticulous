@@ -17,21 +17,6 @@ from meticulous._github import check_forked, checkout, fork, is_archived
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 
-MAIN_MENU = [
-    {
-        "message": "What do you want to do?",
-        "choices": [
-            "add a new repository",
-            "manually add a new repository",
-            "examine a repository",
-            "remove a repository",
-            "prepare a change",
-            "prepare an issue",
-            "- quit -",
-        ],
-    }
-]
-
 
 def make_simple_choice(choices, message="What do you want to do?"):
     """
@@ -42,7 +27,7 @@ def make_simple_choice(choices, message="What do you want to do?"):
 
 def make_choice(choices, message="What do you want to do?"):
     """
-    Call pyinquirer/prompt-toolkit to make a choice
+    Call PyInquirer/prompt-toolkit to make a choice
     """
     choicelist = sorted(list(choices.keys()))
     choicelist.append("- quit -")
@@ -127,14 +112,47 @@ def prepare_an_issue(target):  # pylint: disable=unused-argument
     """
     Select an available repository to prepare a change
     """
-    reponame, repodir = pick_repo_save()
-    issue_template = Path(repodir) / ".github" / "ISSUE_TEMPLATE"
-    has_issue_template = issue_template.is_dir()
-    print(
-        f"{reponame} {'HAS' if has_issue_template else 'does not have'}"
-        f" an issue template"
-    )
-    print(repr(repodir))
+    reponame, reposave = pick_repo_save()
+    while True:
+        repodir = reposave["repodir"]
+        repodirpath = Path(repodir)
+        issue_template = Path(".github") / "ISSUE_TEMPLATE"
+        has_issue_template = (repodirpath / issue_template).is_dir()
+        print(
+            f"{reponame} {'HAS' if has_issue_template else 'does not have'}"
+            f" an issue template"
+        )
+        contrib_guide = Path("CONTRIBUTING.md")
+        has_contrib_guide = (repodirpath / contrib_guide).is_file()
+        print(
+            f"{reponame} {'HAS' if has_contrib_guide else 'does not have'}"
+            f" a contributing guide"
+        )
+        choices = {}
+        if has_issue_template:
+            choices["show issue template"] = (
+                show_path, issue_template
+            )
+        if has_contrib_guide:
+            choices["show contribution guide"] = (
+                show_path, contrib_guide
+            )
+        option = make_choice(choices)
+        if option is None:
+            return
+        handler, context = option
+        handler(reponame, reposave, context)
+
+
+def show_path(reponame, reposave, path):  # pylint: disable=unused-argument
+    """
+    Display the issue template directory
+    """
+    print("Opening editor")
+    editor = local["/usr/bin/vim"]
+    repodir = reposave["repodir"]
+    with local.cwd(repodir):
+        _ = editor[str(path)] & FG
 
 
 def add_change_for_repo(repodir):
