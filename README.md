@@ -31,6 +31,9 @@ $ pip install meticulous
 
 ## Prerequisites:
 - PyGithub
+- plumbum
+- spelling
+- PyInquirer
 
 
 ## Download from PyPI.org

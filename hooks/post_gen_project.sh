@@ -16,4 +16,6 @@ git checkout -- \
  app/tests \
  docs/index.rst \
  logo.png \
-app/Dockerfile app/setup.py
+ app/Dockerfile app/setup.py
+
+rm -rf app/pip/2.7 app/pip/3.5
