@@ -71,7 +71,7 @@ def run_invocation(target):
                 "remove a repository": remove_repo_selection,
                 "add a new repository": add_new_repo,
                 "prepare a change": prepare_a_change,
-                "prepare an issue": prepare_an_issue,
+                "prepare a pr/issue": prepare_a_pr_or_issue,
             }
             handler = make_choice(lookup)
             if handler is None:
@@ -108,7 +108,7 @@ def prepare_a_change(target):  # pylint: disable=unused-argument
     add_change_for_repo(repodir)
 
 
-def prepare_an_issue(target):  # pylint: disable=unused-argument
+def prepare_a_pr_or_issue(target):  # pylint: disable=unused-argument
     """
     Select an available repository to prepare a change
     """
@@ -116,28 +116,47 @@ def prepare_an_issue(target):  # pylint: disable=unused-argument
     while True:
         repodir = reposave["repodir"]
         repodirpath = Path(repodir)
-        issue_template = Path(".github") / "ISSUE_TEMPLATE"
-        has_issue_template = (repodirpath / issue_template).is_dir()
-        print(
-            f"{reponame} {'HAS' if has_issue_template else 'does not have'}"
-            f" an issue template"
-        )
-        contrib_guide = Path("CONTRIBUTING.md")
-        has_contrib_guide = (repodirpath / contrib_guide).is_file()
-        print(
-            f"{reponame} {'HAS' if has_contrib_guide else 'does not have'}"
-            f" a contributing guide"
-        )
-        choices = {}
-        if has_issue_template:
-            choices["show issue template"] = (show_path, issue_template)
-        if has_contrib_guide:
-            choices["show contribution guide"] = (show_path, contrib_guide)
+        choices = get_pr_or_issue_choices(reponame, repodirpath)
         option = make_choice(choices)
         if option is None:
             return
         handler, context = option
         handler(reponame, reposave, context)
+
+
+def get_pr_or_issue_choices(reponame, repodirpath):
+    """
+    Work out the choices menu for pr/issue
+    """
+    issue_template = Path(".github") / "ISSUE_TEMPLATE"
+    pr_template = Path(".github") / "pull_request_template.md"
+    contrib_guide = Path("CONTRIBUTING.md")
+    issue = Path("__issue__.txt")
+    prpath = Path("__pr__.txt")
+    choices = {}
+    for path in (issue_template, pr_template, contrib_guide, issue, prpath):
+        has_path = (repodirpath / path).exists()
+        print(f"{reponame} {'HAS' if has_path else 'does not have'}" f" {path}")
+        if has_path:
+            choices[f"show {path}"] = (show_path, path)
+    choices["make a full issue"] = (make_issue, True)
+    choices["make a short issue"] = (make_issue, False)
+    has_issue = (repodirpath / issue).exists()
+    if has_issue:
+        choices["submit issue"] = (submit_issue, None)
+    return choices
+
+
+def make_issue(reponame, reposave, is_full):  # pylint: disable=unused-argument
+    """
+    Prepare an issue template file
+    """
+
+
+def submit_issue(reponame, reposave, ctxt):  # pylint: disable=unused-argument
+    """
+    Push up an issue
+    """
 
 
 def show_path(reponame, reposave, path):  # pylint: disable=unused-argument
