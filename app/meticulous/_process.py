@@ -28,6 +28,7 @@ MAIN_MENU = [
             "examine a repository",
             "remove a repository",
             "prepare a change",
+            "prepare an issue",
             "- quit -",
         ],
     }
@@ -38,10 +39,7 @@ SAVE_QUIT_MENU = [
         "type": "list",
         "name": "option",
         "message": "What do you want to do?",
-        "choices": [
-            "save",
-            "- quit -",
-        ],
+        "choices": ["save", "- quit -"],
     }
 ]
 
@@ -86,6 +84,8 @@ def run_invocation(target):
                 add_new_repo(target)
             elif option == "prepare a change":
                 prepare_a_change()
+            elif option == "prepare an issue":
+                prepare_an_issue()
             elif option == "- quit -":
                 print("Goodbye.")
                 return
@@ -122,6 +122,14 @@ def prepare_a_change():
     add_change_for_repo(repodir)
 
 
+def prepare_an_issue():
+    """
+    Select an available repository to prepare a change
+    """
+    _, repodir = pick_repo_save()
+    0 / 0
+
+
 def add_change_for_repo(repodir):
     """
     Work out the staged commit and prepare an issue and pull request based on
@@ -131,12 +139,12 @@ def add_change_for_repo(repodir):
     print(f"Changing {del_word} to {add_word} in {', '.join(file_paths)}")
     answers = prompt(SAVE_QUIT_MENU)
     option = answers.get("option", "- quit -")
-    if option == 'save':
+    if option == "save":
         saves = get_json_value("repository_saves", {})
         saves[repodir] = {
-            'add_word': add_word,
-            'del_word': del_word,
-            'file_paths': file_paths,
+            "add_word": add_word,
+            "del_word": del_word,
+            "file_paths": file_paths,
         }
         set_json_value("repository_saves", saves)
 
@@ -152,8 +160,8 @@ def get_typo(repodir):
     with local.cwd(repodir):
         output = git("diff", "--staged")
         for line in output.splitlines():
-            if line.startswith('--- a/'):
-                file_path = line[len('--- a/'):]
+            if line.startswith("--- a/"):
+                file_path = line[len("--- a/") :]
                 file_paths.append(file_path)
         for line in output.splitlines():
             if line.startswith("- "):
