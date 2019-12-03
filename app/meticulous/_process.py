@@ -74,18 +74,17 @@ def run_invocation(target):
         answers = prompt(MAIN_MENU)
         option = answers.get("option", "- quit -")
         try:
-            if option == "examine a repository":
-                examine_repo_selection()
-            elif option == "manually add a new repository":
-                manually_add_new_repo(target)
-            elif option == "remove a repository":
-                remove_repo_selection()
-            elif option == "add a new repository":
-                add_new_repo(target)
-            elif option == "prepare a change":
-                prepare_a_change()
-            elif option == "prepare an issue":
-                prepare_an_issue()
+            lookup = {
+                "examine a repository": examine_repo_selection,
+                "manually add a new repository": manually_add_new_repo,
+                "remove a repository": remove_repo_selection,
+                "add a new repository": add_new_repo,
+                "prepare a change": prepare_a_change,
+                "prepare an issue": prepare_an_issue,
+            }
+            handler = lookup.get(option)
+            if handler is not None:
+                handler(target)
             elif option == "- quit -":
                 print("Goodbye.")
                 return
@@ -96,7 +95,7 @@ def run_invocation(target):
             continue
 
 
-def remove_repo_selection():
+def remove_repo_selection(target):  # pylint: disable=unused-argument
     """
     Select an available repository to remove
     """
@@ -106,7 +105,7 @@ def remove_repo_selection():
     set_json_value("repository_map", repository_map)
 
 
-def examine_repo_selection():
+def examine_repo_selection(target):  # pylint: disable=unused-argument
     """
     Select an available repository to examine
     """
@@ -114,7 +113,7 @@ def examine_repo_selection():
     examine_repo(repodir)
 
 
-def prepare_a_change():
+def prepare_a_change(target):  # pylint: disable=unused-argument
     """
     Select an available repository to prepare a change
     """
@@ -122,12 +121,12 @@ def prepare_a_change():
     add_change_for_repo(repodir)
 
 
-def prepare_an_issue():
+def prepare_an_issue(target):  # pylint: disable=unused-argument
     """
     Select an available repository to prepare a change
     """
     _, repodir = pick_repo_save()
-    0 / 0
+    print(repr(repodir))
 
 
 def add_change_for_repo(repodir):
@@ -141,10 +140,12 @@ def add_change_for_repo(repodir):
     option = answers.get("option", "- quit -")
     if option == "save":
         saves = get_json_value("repository_saves", {})
-        saves[repodir] = {
+        reponame = os.path.basename(repodir)
+        saves[reponame] = {
             "add_word": add_word,
             "del_word": del_word,
             "file_paths": file_paths,
+            "repodir": repodir,
         }
         set_json_value("repository_saves", saves)
 
@@ -161,7 +162,8 @@ def get_typo(repodir):
         output = git("diff", "--staged")
         for line in output.splitlines():
             if line.startswith("--- a/"):
-                file_path = line[len("--- a/") :]
+                index = len("--- a/")
+                file_path = line[index:]
                 file_paths.append(file_path)
         for line in output.splitlines():
             if line.startswith("- "):
@@ -180,24 +182,38 @@ def get_typo(repodir):
     raise ProcessingFailed()
 
 
+def pick_repo_save():
+    """
+    Select a saved repository
+    """
+    return pick_repo_common("repository_saves")
+
+
 def pick_repo():
     """
     Select an available repository
     """
-    repository_map = get_json_value("repository_map", {})
-    if not repository_map:
+    return pick_repo_common("repository_map")
+
+
+def pick_repo_common(key):
+    """
+    Select an available repository
+    """
+    repository_list = get_json_value(key, {})
+    if not repository_list:
         print("No repositories available.", file=sys.stderr)
         raise NoRepoException()
     choice = dict(SELECT_REPO)
-    choices = list(repository_map.keys())
+    choices = list(repository_list.keys())
     choices.append("- quit -")
     choice["choices"] = choices
     answers = prompt([choice])
     option = answers.get("option", "- quit -")
     if option == "- quit -":
         raise NoRepoException()
-    repodir = repository_map[option]
-    return option, repodir
+    repo_data = repository_list[option]
+    return option, repo_data
 
 
 def examine_repo(repodir):
