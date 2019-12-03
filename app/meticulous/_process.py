@@ -130,13 +130,9 @@ def prepare_an_issue(target):  # pylint: disable=unused-argument
         )
         choices = {}
         if has_issue_template:
-            choices["show issue template"] = (
-                show_path, issue_template
-            )
+            choices["show issue template"] = (show_path, issue_template)
         if has_contrib_guide:
-            choices["show contribution guide"] = (
-                show_path, contrib_guide
-            )
+            choices["show contribution guide"] = (show_path, contrib_guide)
         option = make_choice(choices)
         if option is None:
             return
