@@ -11,11 +11,11 @@ from pathlib import Path
 
 from plumbum import FG, local
 from PyInquirer import prompt
+from spelling.check import check  # noqa=I001
 
 from meticulous._github import check_forked, checkout, fork, get_api, is_archived
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
-from spelling.check import check  # noqa=I001
 
 
 def make_simple_choice(choices, message="What do you want to do?"):
