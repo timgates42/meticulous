@@ -274,8 +274,8 @@ def create_pr(reponame, title, body, from_branch, to_branch):
     )
     print(
         f"Created PR #{pullreq.number} view at"
-        f" https://github.com/{repo.organization.name}"
-        f"/{repo.name}/pulls/{pullreq.number}"
+        f" https://github.com/{pullreq.user.name}"
+        f"/{repo.name}/pull/{pullreq.number}"
     )
 
 
