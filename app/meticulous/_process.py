@@ -13,7 +13,7 @@ from plumbum import FG, local
 from PyInquirer import prompt
 from spelling.check import check  # noqa=I001
 
-from meticulous._github import check_forked, checkout, fork, is_archived
+from meticulous._github import check_forked, checkout, fork, get_api, is_archived
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 
@@ -132,9 +132,10 @@ def get_pr_or_issue_choices(reponame, repodirpath):
     pr_template = Path(".github") / "pull_request_template.md"
     contrib_guide = Path("CONTRIBUTING.md")
     issue = Path("__issue__.txt")
+    commit = Path("__commit__.txt")
     prpath = Path("__pr__.txt")
     choices = {}
-    for path in (issue_template, pr_template, contrib_guide, issue, prpath):
+    for path in (issue_template, pr_template, contrib_guide, prpath, issue, commit):
         has_path = (repodirpath / path).exists()
         print(f"{reponame} {'HAS' if has_path else 'does not have'}" f" {path}")
         if has_path:
@@ -144,6 +145,9 @@ def get_pr_or_issue_choices(reponame, repodirpath):
     has_issue = (repodirpath / issue).exists()
     if has_issue:
         choices["submit issue"] = (submit_issue, None)
+    has_commit = (repodirpath / commit).exists()
+    if has_commit:
+        choices["submit commit"] = (submit_commit, None)
     return choices
 
 
@@ -151,12 +155,128 @@ def make_issue(reponame, reposave, is_full):  # pylint: disable=unused-argument
     """
     Prepare an issue template file
     """
+    add_word = reposave["add_word"]
+    del_word = reposave["del_word"]
+    file_paths = reposave["file_paths"]
+    repodir = Path(reposave["repodir"])
+    files = ", ".join(file_paths)
+    title = f"Fix simple typo: {del_word} -> {add_word}"
+    if is_full:
+        body = f"""\
+# Issue Type
+
+[x] Bug (Typo)
+
+# Steps to Replicate
+
+1. Examine {files}.
+2. Search for {del_word}.
+
+# Expected Behaviour
+
+1. Should read {add_word}.
+"""
+    else:
+        body = f"""\
+There is a small typo in {files}.
+Should read {add_word} rather than {del_word}.
+"""
+    with io.open(str(repodir / "__issue__.txt"), "w", encoding="utf-8") as fobj:
+        print(title, file=fobj)
+        print("", file=fobj)
+        print(body, file=fobj)
 
 
 def submit_issue(reponame, reposave, ctxt):  # pylint: disable=unused-argument
     """
     Push up an issue
     """
+    repodir = Path(reposave["repodir"])
+    add_word = reposave["add_word"]
+    del_word = reposave["del_word"]
+    issue_path = str(repodir / "__issue__.txt")
+    title, body = load_commit_like_file(issue_path)
+    issue_num = issue_via_api(reponame, title, body)
+    commit_path = str(repodir / "__commit__.txt")
+    with io.open(commit_path, "w", encoding="utf-8") as fobj:
+        print(
+            f"""\
+Fix simple typo: {del_word} -> {add_word}
+
+Closes #{issue_num}
+""",
+            file=fobj,
+        )
+
+
+def issue_via_api(reponame, title, body):
+    """
+    Create an issue via the API
+    """
+    api = get_api()
+    user_org = api.get_user().login
+    repo = api.get_repo(f"{user_org}/{reponame}")
+    while repo.parent:
+        repo = repo.parent
+    issue = repo.create_issue(title=title, body=body)
+    return issue.number
+
+
+def load_commit_like_file(path):
+    """
+    Read title and body from a well formatted git commit
+    """
+    with io.open(path, "r", encoding="utf-8") as fobj:
+        title = fobj.readline().strip()
+        blankline = fobj.readline().strip()
+        if blankline != "":
+            raise Exception(f"Needs to be a blank second line for {path}.")
+        body = fobj.read()
+    return title, body
+
+
+def submit_commit(reponame, reposave, ctxt):  # pylint: disable=unused-argument
+    """
+    Push up a commit
+    """
+    repodir = Path(reposave["repodir"])
+    add_word = reposave["add_word"]
+    commit_path = str(repodir / "__commit__.txt")
+    title, body = load_commit_like_file(commit_path)
+    from_branch, to_branch = push_commit(repodir, add_word)
+    create_pr(reponame, title, body, from_branch, to_branch)
+
+
+def push_commit(repodir, add_word):
+    """
+    Create commit and push
+    """
+    git = local["git"]
+    with local.cwd(repodir):
+        to_branch = git("symbolic-ref", "--short", "HEAD").strip()
+        from_branch = f"bugfix/typo_{add_word}"
+        _ = git["commit", "-F", "__commit__.txt"] & FG
+        _ = git["push", "origin", f"{to_branch}:{from_branch}"] & FG
+    return from_branch, to_branch
+
+
+def create_pr(reponame, title, body, from_branch, to_branch):
+    """
+    Use API to create a pull request
+    """
+    api = get_api()
+    user_org = api.get_user().login
+    repo = api.get_repo(f"{user_org}/{reponame}")
+    while repo.parent:
+        repo = repo.parent
+    pullreq = repo.create_pull(
+        title=title, body=body, base=to_branch, head=f"{user_org}:{from_branch}"
+    )
+    print(
+        f"Created PR #{pullreq.number} view at"
+        f" https://github.com/{pullreq.user.name}"
+        f"/{repo.name}/pull/{pullreq.number}"
+    )
 
 
 def show_path(reponame, reposave, path):  # pylint: disable=unused-argument
@@ -164,7 +284,7 @@ def show_path(reponame, reposave, path):  # pylint: disable=unused-argument
     Display the issue template directory
     """
     print("Opening editor")
-    editor = local["/usr/bin/vim"]
+    editor = local["vim"]
     repodir = reposave["repodir"]
     with local.cwd(repodir):
         _ = editor[str(path)] & FG
@@ -194,7 +314,7 @@ def get_typo(repodir):
     """
     Look in the staged commit for the typo.
     """
-    git = local["/usr/bin/git"]
+    git = local["git"]
     del_lines = []
     add_lines = []
     file_paths = []
@@ -256,7 +376,7 @@ def examine_repo(repodir):
     Inspect an available repository
     """
     print("Opening editor")
-    editor = local["/usr/bin/vim"]
+    editor = local["vim"]
     with local.cwd(repodir):
         _ = editor["spelling.txt"] & FG
 
