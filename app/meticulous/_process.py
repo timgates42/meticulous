@@ -173,11 +173,11 @@ def make_issue(reponame, reposave, is_full):  # pylint: disable=unused-argument
 1. Should read {add_word}.
 """
     else:
-        body = """\
+        body = f"""\
 There is a small typo in {files}.
 Should read {add_word} rather than {del_word}.
 """
-    with io.open(str(repodir / "issue"), "w", encoding="utf-8") as fobj:
+    with io.open(str(repodir / "__issue__.txt"), "w", encoding="utf-8") as fobj:
         print(title, file=fobj)
         print("", file=fobj)
         print(body, file=fobj)
@@ -188,15 +188,13 @@ def submit_issue(reponame, reposave, ctxt):  # pylint: disable=unused-argument
     Push up an issue
     """
     repodir = Path(reposave["repodir"])
-    issue_path = str(repodir / "issue")
+    issue_path = str(repodir / "__issue__.txt")
     with io.open(issue_path, "r", encoding="utf-8") as fobj:
         title = fobj.readline().strip()
         blankline = fobj.readline().strip()
         if blankline != "":
             raise Exception(f"Needs to be a blank second line for {issue_path}.")
         body = fobj.read()
-    if repodir:
-        raise Exception(repr((title, body)))
     api = get_api()
     user_org = api.get_user().login
     repo = api.get_repo(f"{user_org}/{reponame}")
