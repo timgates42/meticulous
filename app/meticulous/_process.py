@@ -6,6 +6,7 @@ from __future__ import absolute_import, division, print_function
 import io
 import os
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -86,10 +87,18 @@ def remove_repo_selection(target):  # pylint: disable=unused-argument
     """
     Select an available repository to remove
     """
-    repo, _ = pick_repo()
-    repository_map = get_json_value("repository_map", {})
-    del repository_map[repo]
-    set_json_value("repository_map", repository_map)
+    os.chdir(target)
+    repo, repodir = pick_repo()
+    for name in ("repository_map", "repository_saves"):
+        repository_map = get_json_value(name, {})
+        try:
+            del repository_map[repo]
+            set_json_value(name, repository_map)
+        except KeyError:
+            continue
+    option = make_simple_choice(["Yes", "No"], "Delete the directory?")
+    if option == "Yes":
+        shutil.rmtree(repodir)
 
 
 def examine_repo_selection(target):  # pylint: disable=unused-argument
@@ -272,10 +281,7 @@ def create_pr(reponame, title, body, from_branch, to_branch):
     pullreq = repo.create_pull(
         title=title, body=body, base=to_branch, head=f"{user_org}:{from_branch}"
     )
-    print(
-        f"Created PR #{pullreq.number} view at"
-        f" {pullreq.html_url}"
-    )
+    print(f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}")
 
 
 def show_path(reponame, reposave, path):  # pylint: disable=unused-argument
