@@ -11,11 +11,11 @@ from pathlib import Path
 
 from plumbum import FG, local
 from PyInquirer import prompt
-from spelling.check import check  # noqa=I001
 
-from meticulous._github import check_forked, checkout, fork, is_archived
+from meticulous._github import check_forked, checkout, fork, get_api, is_archived
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
+from spelling.check import check  # noqa=I001
 
 
 def make_simple_choice(choices, message="What do you want to do?"):
@@ -151,12 +151,59 @@ def make_issue(reponame, reposave, is_full):  # pylint: disable=unused-argument
     """
     Prepare an issue template file
     """
+    add_word = reposave["add_word"]
+    del_word = reposave["del_word"]
+    file_paths = reposave["file_paths"]
+    repodir = Path(reposave["repodir"])
+    files = ", ".join(file_paths)
+    title = f"Fix simple typo: {del_word} -> {add_word}"
+    if is_full:
+        body = f"""\
+# Issue Type
+
+[x] Bug (Typo)
+
+# Steps to Replicate
+
+1. Examine {files}.
+2. Search for {del_word}.
+
+# Expected Behaviour
+
+1. Should read {add_word}.
+"""
+    else:
+        body = """\
+There is a small typo in {files}.
+Should read {add_word} rather than {del_word}.
+"""
+    with io.open(str(repodir / "issue"), "w", encoding="utf-8") as fobj:
+        print(title, file=fobj)
+        print("", file=fobj)
+        print(body, file=fobj)
 
 
 def submit_issue(reponame, reposave, ctxt):  # pylint: disable=unused-argument
     """
     Push up an issue
     """
+    repodir = Path(reposave["repodir"])
+    issue_path = str(repodir / "issue")
+    with io.open(issue_path, "r", encoding="utf-8") as fobj:
+        title = fobj.readline().strip()
+        blankline = fobj.readline().strip()
+        if blankline != "":
+            raise Exception(f"Needs to be a blank second line for {issue_path}.")
+        body = fobj.read()
+    if repodir:
+        raise Exception(repr((title, body)))
+    api = get_api()
+    user_org = api.get_user().login
+    repo = api.get_repo(f"{user_org}/{reponame}")
+    while repo.parent:
+        repo = repo.parent
+    issue = repo.create_issue(title=title, body=body)
+    print(repr(issue))
 
 
 def show_path(reponame, reposave, path):  # pylint: disable=unused-argument
