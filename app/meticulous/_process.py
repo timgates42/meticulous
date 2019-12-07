@@ -331,11 +331,11 @@ def get_typo(repodir):
                 file_path = line[index:]
                 file_paths.append(file_path)
         for line in output.splitlines():
-            if line.startswith("- "):
+            if line.startswith("-") and not line.startswith("--- "):
                 del_lines.append(line[2:])
-            elif line.startswith("+ "):
+            elif line.startswith("+") and not line.startswith("+++ "):
                 add_lines.append(line[2:])
-    if len(del_lines) != 1 or len(add_lines) != 1:
+    if not del_lines or not add_lines:
         print("Could not read diff", file=sys.stderr)
         raise ProcessingFailed()
     del_words = re.findall("\\S+", del_lines[0])
