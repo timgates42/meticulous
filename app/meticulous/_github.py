@@ -84,5 +84,17 @@ def checkout(repo, target):
         )
 
 
+def issues_allowed(reponame):
+    """
+    Check if issues disabled on the parent repo
+    """
+    api = get_api()
+    user_org = api.get_user().login
+    repo = api.get_repo(f"{user_org}/{reponame}")
+    while repo.parent:
+        repo = repo.parent
+    return repo.has_issues
+
+
 if __name__ == "__main__":
     print(check_forked("pylint"))
