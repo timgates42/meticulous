@@ -194,16 +194,16 @@ def make_issue(reponame, reposave, is_full):  # pylint: disable=unused-argument
 # Steps to Replicate
 
 1. Examine {files}.
-2. Search for {del_word}.
+2. Search for `{del_word}`.
 
 # Expected Behaviour
 
-1. Should read {add_word}.
+1. Should read `{add_word}`.
 """
     else:
         body = f"""\
 There is a small typo in {files}.
-Should read {add_word} rather than {del_word}.
+Should read `{add_word}` rather than `{del_word}`.
 """
     with io.open(str(repodir / "__issue__.txt"), "w", encoding="utf-8") as fobj:
         print(title, file=fobj)
@@ -227,7 +227,7 @@ def make_a_commit(reponame, reposave, is_full):  # pylint: disable=unused-argume
 Fix simple typo: {del_word} -> {add_word}
 
 There is a small typo in {files}.
-Should read {add_word} rather than {del_word}.
+Should read `{add_word}` rather than `{del_word}`.
 """,
             file=fobj,
         )
@@ -369,9 +369,9 @@ def get_typo(repodir):
                 file_paths.append(file_path)
         for line in output.splitlines():
             if line.startswith("-") and not line.startswith("--- "):
-                del_lines.append(line[2:])
+                del_lines.append(line[1:])
             elif line.startswith("+") and not line.startswith("+++ "):
-                add_lines.append(line[2:])
+                add_lines.append(line[1:])
     if not del_lines or not add_lines:
         print("Could not read diff", file=sys.stderr)
         raise ProcessingFailed()
