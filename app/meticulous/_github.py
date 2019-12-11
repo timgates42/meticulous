@@ -86,7 +86,7 @@ def checkout(repo, target):
 
 def issues_allowed(reponame):
     """
-    Check if issues disabled on the parent repo
+    Check if issues disabled on the parent repository
     """
     api = get_api()
     user_org = api.get_user().login
