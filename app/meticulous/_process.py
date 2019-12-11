@@ -478,6 +478,7 @@ def add_new_repo(target):
 
 def get_editor():
     """
-    Allow specifying a different editor via the common ENV EDITOR
+    Allow specifying a different editor via the common environment variable
+    EDITOR
     """
     return os.environ.get("EDITOR", "vim")
