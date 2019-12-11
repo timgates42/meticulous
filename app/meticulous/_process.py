@@ -14,7 +14,14 @@ from plumbum import FG, local
 from PyInquirer import prompt
 from spelling.check import check  # noqa=I001
 
-from meticulous._github import check_forked, checkout, fork, get_api, is_archived
+from meticulous._github import (
+    check_forked,
+    checkout,
+    fork,
+    get_api,
+    is_archived,
+    issues_allowed,
+)
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 
@@ -143,20 +150,34 @@ def get_pr_or_issue_choices(reponame, repodirpath):
     issue = Path("__issue__.txt")
     commit = Path("__commit__.txt")
     prpath = Path("__pr__.txt")
+    no_issues = Path("__no_issues__.txt")
     choices = {}
-    for path in (issue_template, pr_template, contrib_guide, prpath, issue, commit):
+    for path in (
+        issue_template,
+        pr_template,
+        contrib_guide,
+        prpath,
+        issue,
+        commit,
+        no_issues,
+    ):
         has_path = (repodirpath / path).exists()
         print(f"{reponame} {'HAS' if has_path else 'does not have'}" f" {path}")
         if has_path:
             choices[f"show {path}"] = (show_path, path)
-    choices["make a full issue"] = (make_issue, True)
-    choices["make a short issue"] = (make_issue, False)
+    repo_disables_issues = (repodirpath / no_issues).exists()
+    if repo_disables_issues:
+        choices["make a commit"] = (make_a_commit, False)
+    else:
+        choices["make a full issue"] = (make_issue, True)
+        choices["make a short issue"] = (make_issue, False)
     has_issue = (repodirpath / issue).exists()
     if has_issue:
         choices["submit issue"] = (submit_issue, None)
     has_commit = (repodirpath / commit).exists()
     if has_commit:
         choices["submit commit"] = (submit_commit, None)
+        choices["submit issue"] = (submit_issue, None)
     return choices
 
 
@@ -179,21 +200,43 @@ def make_issue(reponame, reposave, is_full):  # pylint: disable=unused-argument
 # Steps to Replicate
 
 1. Examine {files}.
-2. Search for {del_word}.
+2. Search for `{del_word}`.
 
 # Expected Behaviour
 
-1. Should read {add_word}.
+1. Should read `{add_word}`.
 """
     else:
         body = f"""\
 There is a small typo in {files}.
-Should read {add_word} rather than {del_word}.
+Should read `{add_word}` rather than `{del_word}`.
 """
     with io.open(str(repodir / "__issue__.txt"), "w", encoding="utf-8") as fobj:
         print(title, file=fobj)
         print("", file=fobj)
         print(body, file=fobj)
+
+
+def make_a_commit(reponame, reposave, is_full):  # pylint: disable=unused-argument
+    """
+    Prepare a commit template file
+    """
+    add_word = reposave["add_word"]
+    del_word = reposave["del_word"]
+    file_paths = reposave["file_paths"]
+    repodir = Path(reposave["repodir"])
+    files = ", ".join(file_paths)
+    commit_path = str(repodir / "__commit__.txt")
+    with io.open(commit_path, "w", encoding="utf-8") as fobj:
+        print(
+            f"""\
+Fix simple typo: {del_word} -> {add_word}
+
+There is a small typo in {files}.
+Should read `{add_word}` rather than `{del_word}`.
+""",
+            file=fobj,
+        )
 
 
 def submit_issue(reponame, reposave, ctxt):  # pylint: disable=unused-argument
@@ -332,9 +375,9 @@ def get_typo(repodir):
                 file_paths.append(file_path)
         for line in output.splitlines():
             if line.startswith("-") and not line.startswith("--- "):
-                del_lines.append(line[2:])
+                del_lines.append(line[1:])
             elif line.startswith("+") and not line.startswith("+++ "):
-                add_lines.append(line[2:])
+                add_lines.append(line[1:])
     if not del_lines or not add_lines:
         print("Could not read diff", file=sys.stderr)
         raise ProcessingFailed()
@@ -425,5 +468,9 @@ def add_new_repo(target):
             repository_map = get_json_value("repository_map", {})
             repository_map[repo] = str(repodir)
             set_json_value("repository_map", repository_map)
+            if not issues_allowed(repo):
+                no_issues_path = repodir / "__no_issues__.txt"
+                with io.open(no_issues_path, "w", encoding="utf-8") as fobj:
+                    print("No Issues.", file=fobj)
             return repo
     return None
