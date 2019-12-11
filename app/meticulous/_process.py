@@ -332,7 +332,7 @@ def show_path(reponame, reposave, path):  # pylint: disable=unused-argument
     Display the issue template directory
     """
     print("Opening editor")
-    editor = local["vim"]
+    editor = get_editor()
     repodir = reposave["repodir"]
     with local.cwd(repodir):
         _ = editor[str(path)] & FG
@@ -424,7 +424,7 @@ def examine_repo(repodir):
     Inspect an available repository
     """
     print("Opening editor")
-    editor = local["vim"]
+    editor = get_editor()
     with local.cwd(repodir):
         _ = editor["spelling.txt"] & FG
 
@@ -474,3 +474,10 @@ def add_new_repo(target):
                     print("No Issues.", file=fobj)
             return repo
     return None
+
+
+def get_editor():
+    """
+    Allow specifying a different editor via the common ENV EDITOR
+    """
+    return os.environ.get("EDITOR", "vim")
