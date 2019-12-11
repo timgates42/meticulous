@@ -13,8 +13,14 @@ from pathlib import Path
 from plumbum import FG, local
 from PyInquirer import prompt
 
-from meticulous._github import (check_forked, checkout, fork, get_api, is_archived,
-                                issues_allowed)
+from meticulous._github import (
+    check_forked,
+    checkout,
+    fork,
+    get_api,
+    is_archived,
+    issues_allowed,
+)
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 from spelling.check import check  # noqa=I001
