@@ -98,7 +98,7 @@ def issues_allowed(reponame):
 
 def get_true_orgrepo(orgrepo):
     """
-    Check if a orgrepo has been moved
+    Check if an orginisation repository has been moved
     """
     api = get_api()
     repo = api.get_repo(orgrepo)
