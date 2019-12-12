@@ -96,5 +96,14 @@ def issues_allowed(reponame):
     return repo.has_issues
 
 
+def get_true_orgrepo(orgrepo):
+    """
+    Check if a orgrepo has been moved
+    """
+    api = get_api()
+    repo = api.get_repo(orgrepo)
+    return repo.full_name
+
+
 if __name__ == "__main__":
     print(check_forked("pylint"))

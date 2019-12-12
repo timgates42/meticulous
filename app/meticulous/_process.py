@@ -14,14 +14,15 @@ from plumbum import FG, local
 from PyInquirer import prompt
 from spelling.check import check  # noqa=I001
 
-from meticulous._github import (
-    check_forked,
-    checkout,
-    fork,
-    get_api,
-    is_archived,
-    issues_allowed,
-)
+from meticulous._github import (  # noqa=I001
+    check_forked,  # noqa=I001
+    checkout,  # noqa=I001
+    fork,  # noqa=I001
+    get_api,  # noqa=I001
+    get_true_orgrepo,  # noqa=I001
+    is_archived,  # noqa=I001
+    issues_allowed,  # noqa=I001
+)  # noqa=I001
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 
@@ -45,6 +46,16 @@ def make_choice(choices, message="What do you want to do?"):
     answers = prompt(menu)
     option = answers.get("option", "- quit -")
     return choices.get(option)
+
+
+def get_input(message):
+    """
+    Call PyInquirer/prompt-toolkit to make a simple input
+    """
+    menu = [{"type": "input", "name": "option", "message": message}]
+    answers = prompt(menu)
+    option = answers.get("option")
+    return option
 
 
 class ProcessingFailed(Exception):
@@ -81,6 +92,8 @@ def run_invocation(target):
                 "prepare a change": prepare_a_change,
                 "prepare a pr/issue": prepare_a_pr_or_issue,
             }
+            if not lookup:
+                lookup["test"] = test
             handler = make_choice(lookup)
             if handler is None:
                 print("Goodbye.")
@@ -444,9 +457,22 @@ def manually_add_new_repo(target):
 
 def add_new_repo(target):
     """
+    Query how many new repositories and add them
+    """
+    choices = {str(num).zfill(2): str(num) for num in (1, 2, 5, 10, 20)}
+    option = make_simple_choice(choices, "How Many?")
+    if option is None:
+        return
+    for _ in range(int(option)):
+        add_one_new_repo(target)
+
+
+def add_one_new_repo(target):
+    """
     Locate a new repository and add it to the available set.
     """
     for orgrepo in obtain_sources():
+        orgrepo = get_true_orgrepo(orgrepo)
         _, repo = orgrepo.split("/", 1)
         print(f"Checking {orgrepo}")
         if not check_forked(repo):
@@ -474,3 +500,13 @@ def add_new_repo(target):
                     print("No Issues.", file=fobj)
             return repo
     return None
+
+
+def test(target):  # pylint: disable=unused-argument
+    """
+    Prompt for a organization and repository to test
+    """
+    orgrepo = get_input("What organization/repository name?")
+    if orgrepo is None:
+        return
+    print(get_true_orgrepo(orgrepo))
