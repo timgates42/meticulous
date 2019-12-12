@@ -345,7 +345,7 @@ def show_path(reponame, reposave, path):  # pylint: disable=unused-argument
     Display the issue template directory
     """
     print("Opening editor")
-    editor = get_editor()
+    editor = local[get_editor()]
     repodir = reposave["repodir"]
     with local.cwd(repodir):
         _ = editor[str(path)] & FG
@@ -437,7 +437,7 @@ def examine_repo(repodir):
     Inspect an available repository
     """
     print("Opening editor")
-    editor = get_editor()
+    editor = local[get_editor()]
     with local.cwd(repodir):
         _ = editor["spelling.txt"] & FG
 
