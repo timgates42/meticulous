@@ -12,17 +12,17 @@ from pathlib import Path
 
 from plumbum import FG, local
 from PyInquirer import prompt
-from spelling.check import check  # noqa=I001
+from spelling.check import check
 
-from meticulous._github import (  # noqa=I001
-    check_forked,  # noqa=I001
-    checkout,  # noqa=I001
-    fork,  # noqa=I001
-    get_api,  # noqa=I001
-    get_true_orgrepo,  # noqa=I001
-    is_archived,  # noqa=I001
-    issues_allowed,  # noqa=I001
-)  # noqa=I001
+from meticulous._github import (
+    check_forked,
+    checkout,
+    fork,
+    get_api,
+    get_true_orgrepo,
+    is_archived,
+    issues_allowed,
+)
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 
