@@ -471,34 +471,50 @@ def add_one_new_repo(target):
     """
     Locate a new repository and add it to the available set.
     """
+    repository_forked = get_json_value("repository_forked", {})
     for orgrepo in obtain_sources():
+        _, origrepo = orgrepo.split("/", 1)
+        if origrepo in repository_forked:
+            continue
         orgrepo = get_true_orgrepo(orgrepo)
         _, repo = orgrepo.split("/", 1)
+        if repo in repository_forked:
+            continue
         print(f"Checking {orgrepo}")
-        if not check_forked(repo):
-            print(f"Have not forked {orgrepo}")
-            print(f"Forking {orgrepo}")
-            fork(orgrepo)
-            if is_archived(orgrepo):
-                print(f"Skipping archived repo {orgrepo}")
-                continue
-            print(f"Checkout {repo}")
-            checkout(repo, target)
-            repodir = target / repo
-            print(f"Running spell check on {repodir}")
-            spellpath = repodir / "spelling.txt"
-            print(f"Spelling output {spellpath}")
-            with io.open(spellpath, "w", encoding="utf-8") as fobj:
-                os.chdir(repodir)
-                check(True, True, None, fobj)
-            repository_map = get_json_value("repository_map", {})
-            repository_map[repo] = str(repodir)
-            set_json_value("repository_map", repository_map)
-            if not issues_allowed(repo):
-                no_issues_path = repodir / "__no_issues__.txt"
-                with io.open(no_issues_path, "w", encoding="utf-8") as fobj:
-                    print("No Issues.", file=fobj)
-            return repo
+        if check_forked(repo):
+            repository_forked[origrepo] = True
+            repository_forked[repo] = True
+            set_json_value("repository_forked", repository_forked)
+            continue
+        print(f"Have not forked {orgrepo}")
+        print(f"Forking {orgrepo}")
+        fork(orgrepo)
+        if is_archived(orgrepo):
+            print(f"Skipping archived repo {orgrepo}")
+            repository_forked[origrepo] = True
+            repository_forked[repo] = True
+            set_json_value("repository_forked", repository_forked)
+            continue
+        print(f"Checkout {repo}")
+        checkout(repo, target)
+        repodir = target / repo
+        print(f"Running spell check on {repodir}")
+        spellpath = repodir / "spelling.txt"
+        print(f"Spelling output {spellpath}")
+        with io.open(spellpath, "w", encoding="utf-8") as fobj:
+            os.chdir(repodir)
+            check(True, True, None, fobj)
+        repository_map = get_json_value("repository_map", {})
+        repository_map[repo] = str(repodir)
+        set_json_value("repository_map", repository_map)
+        if not issues_allowed(repo):
+            no_issues_path = repodir / "__no_issues__.txt"
+            with io.open(no_issues_path, "w", encoding="utf-8") as fobj:
+                print("No Issues.", file=fobj)
+        repository_forked[origrepo] = True
+        repository_forked[repo] = True
+        set_json_value("repository_forked", repository_forked)
+        return repo
     return None
 
 
