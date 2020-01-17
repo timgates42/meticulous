@@ -325,6 +325,8 @@ def create_pr(reponame, title, body, from_branch, to_branch):
     """
     Use API to create a pull request
     """
+    api = get_api()		     repo = get_parent_repo(reponame)
+    user_org = api.get_user().login 
     repo = get_parent_repo(reponame)
     pullreq = repo.create_pull(
         title=title, body=body, base=to_branch, head=f"{user_org}:{from_branch}"
