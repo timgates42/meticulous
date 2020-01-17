@@ -94,7 +94,8 @@ def issues_allowed(reponame):
 
 def get_parent_repo(reponame):
     """
-    Get the parent-most repo that is not archived.
+    Get the furthest ancestor repository that is not
+    archived.
     """
     api = get_api()
     user_org = api.get_user().login
