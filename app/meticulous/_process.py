@@ -18,7 +18,7 @@ from meticulous._github import (
     check_forked,
     checkout,
     fork,
-    get_api,
+    get_parent_repo,
     get_true_orgrepo,
     is_archived,
     issues_allowed,
@@ -278,11 +278,7 @@ def issue_via_api(reponame, title, body):
     """
     Create an issue via the API
     """
-    api = get_api()
-    user_org = api.get_user().login
-    repo = api.get_repo(f"{user_org}/{reponame}")
-    while repo.parent:
-        repo = repo.parent
+    repo = get_parent_repo(reponame)
     issue = repo.create_issue(title=title, body=body)
     return issue.number
 
@@ -329,11 +325,7 @@ def create_pr(reponame, title, body, from_branch, to_branch):
     """
     Use API to create a pull request
     """
-    api = get_api()
-    user_org = api.get_user().login
-    repo = api.get_repo(f"{user_org}/{reponame}")
-    while repo.parent:
-        repo = repo.parent
+    repo = get_parent_repo(reponame)
     pullreq = repo.create_pull(
         title=title, body=body, base=to_branch, head=f"{user_org}:{from_branch}"
     )
