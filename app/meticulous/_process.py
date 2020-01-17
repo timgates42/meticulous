@@ -79,7 +79,7 @@ def run_invocation(target):
     else:
         target = Path(target)
     if not target.is_dir():
-        print(f"Target {target} is not a directory.", file=sys.stderr)
+        print("Target %s is not a directory." % (target,), file=sys.stderr)
         sys.exit(1)
     prepare()
     while True:
