@@ -394,8 +394,8 @@ def get_typo(repodir):
     if not del_lines or not add_lines:
         print("Could not read diff", file=sys.stderr)
         raise ProcessingFailed()
-    del_words = re.findall("\\S+", del_lines[0])
-    add_words = re.findall("\\S+", add_lines[0])
+    del_words = re.findall("[a-zA-Z]+", del_lines[0])
+    add_words = re.findall("[a-zA-Z]+", add_lines[0])
     for del_word, add_word in zip(del_words, add_words):
         if del_word != add_word:
             return del_word, add_word, file_paths
