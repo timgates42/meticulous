@@ -26,6 +26,7 @@ cookiecutter
 CookieCutter
 cov
 css
+dataset
 datetime
 defusedxml
 dev
