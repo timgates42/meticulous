@@ -88,12 +88,21 @@ def issues_allowed(reponame):
     """
     Check if issues disabled on the parent repository
     """
+    repo = get_parent_repo(reponame)
+    return repo.has_issues
+
+
+def get_parent_repo(reponame):
+    """
+    Get the furthest ancestor repository that is not
+    archived.
+    """
     api = get_api()
     user_org = api.get_user().login
     repo = api.get_repo(f"{user_org}/{reponame}")
-    while repo.parent:
+    while repo.parent and not repo.parent.archived:
         repo = repo.parent
-    return repo.has_issues
+    return repo
 
 
 def get_true_orgrepo(orgrepo):
