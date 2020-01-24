@@ -28,6 +28,13 @@ from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 
 
+def get_spelling_store_path(target):
+    """
+    DB to store spelling stats
+    """
+    return target / ".meticulous" / "spelling.db"
+
+
 def make_simple_choice(choices, message="What do you want to do?"):
     """
     Make a choice using a simple {key: key} list of choices
@@ -499,7 +506,13 @@ def add_one_new_repo(target):
         print(f"Spelling output {spellpath}")
         with io.open(spellpath, "w", encoding="utf-8") as fobj:
             os.chdir(repodir)
-            check(True, True, None, fobj)
+            check(
+                display_context=True,
+                display_summary=True,
+                config=None,
+                storage_path=get_spelling_store_path(target),
+                fobj=fobj,
+            )
         repository_map = get_json_value("repository_map", {})
         repository_map[repo] = str(repodir)
         set_json_value("repository_map", repository_map)
