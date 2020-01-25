@@ -32,7 +32,10 @@ def get_spelling_store_path(target):
     """
     DB to store spelling stats
     """
-    return target / ".meticulous" / "spelling.db"
+    path = target / ".meticulous"
+    if not path.is_dir():
+        path.mkdir()
+    return path / "spelling.db"
 
 
 def make_simple_choice(choices, message="What do you want to do?"):
