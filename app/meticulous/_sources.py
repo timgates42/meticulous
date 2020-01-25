@@ -7,7 +7,7 @@ import io
 import os
 import re
 
-import urllib3
+import requests
 
 from meticulous._storage import get_value, set_value
 
@@ -65,9 +65,7 @@ def download_url(url):
     if os.path.isfile("README.md.txt"):
         with io.open("README.md.txt", "r", encoding="utf-8") as fobj:
             return fobj.read()
-    http = urllib3.PoolManager()
-    resp = http.request("GET", url)
-    return resp.data.decode("utf-8")
+    return requests.get(url).text
 
 
 if __name__ == "__main__":

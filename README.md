@@ -34,6 +34,7 @@ $ pip install meticulous
 - plumbum
 - spelling
 - PyInquirer
+- requests
 
 
 ## Download from PyPI.org
