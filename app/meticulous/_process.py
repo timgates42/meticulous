@@ -13,6 +13,7 @@ from pathlib import Path
 from plumbum import FG, local
 from PyInquirer import prompt
 from spelling.check import check
+from spelling.store import get_store
 
 from meticulous._github import (
     check_forked,
@@ -102,6 +103,7 @@ def run_invocation(target):
                 "add a new repository": add_new_repo,
                 "prepare a change": prepare_a_change,
                 "prepare a pr/issue": prepare_a_pr_or_issue,
+                "show statistics": show_statistics,
             }
             if not lookup:
                 lookup["test"] = test
@@ -112,6 +114,16 @@ def run_invocation(target):
             handler(target)
         except ProcessingFailed:
             continue
+
+
+def show_statistics(target):
+    """
+    Display details about the most common words
+    """
+    storage_path = get_spelling_store_path(target)
+    store = get_store(storage_path)
+    word_count = store.load_word_count()
+    print(repr(word_count))
 
 
 def remove_repo_selection(target):  # pylint: disable=unused-argument
