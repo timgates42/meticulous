@@ -16,7 +16,7 @@ def test_get_spelling_store_path():
     """
     # Setup
     target = pathlib.Path(tempfile.mkdtemp())
-    # Excercise
+    # Exercise
     path = _process.get_spelling_store_path(target)
     # Verify
     dataset.connect(f"sqlite://{path}")
