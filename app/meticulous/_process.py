@@ -499,7 +499,7 @@ def add_one_new_repo(target):
         if repo in repository_forked:
             continue
         print(f"Checking {orgrepo}")
-        if check_forked(repo):
+        if check_forked(orgrepo):
             repository_forked[origrepo] = True
             repository_forked[repo] = True
             set_json_value("repository_forked", repository_forked)
