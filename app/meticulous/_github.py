@@ -18,20 +18,40 @@ def get_api():
     return github.Github(load_api_key())
 
 
-def check_forked(repository):
+def check_forked(orgrepo):
     """
     Check cache to check for an existing fork
     """
+    repository = orgrepo.split("/", 1)[-1]
     key = f"forked|{repository}"
     value = get_value(key)
-    if value is None:
-        result = _check_forked(repository)
-        value = "Y" if result else "N"
-        set_value(key, value)
+    if value == "Y":
+        return True
+    result = _check_forked(orgrepo)
+    value = "Y" if result else "N"
+    set_value(key, value)
     return value == "Y"
 
 
-def _check_forked(repository):
+def _check_forked(orgrepo):
+    """
+    Use the API to check for an existing fork
+    """
+    repository = orgrepo.split("/", 1)[-1]
+    if _check_forked_direct(repository):
+        return True
+    api = get_api()
+    repo = api.get_repo(orgrepo)
+    while repo.parent and not repo.parent.archived:
+        repo = repo.parent
+        orgrepo = repo.full_name
+        repository = orgrepo.split("/", 1)[-1]
+        if _check_forked_direct(repository):
+            return True
+    return False
+
+
+def _check_forked_direct(repository):
     """
     Use the API to check for an existing fork
     """
