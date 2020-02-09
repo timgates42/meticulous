@@ -25,10 +25,11 @@ def check_forked(orgrepo):
     repository = orgrepo.split("/", 1)[-1]
     key = f"forked|{repository}"
     value = get_value(key)
-    if value is None:
-        result = _check_forked(orgrepo)
-        value = "Y" if result else "N"
-        set_value(key, value)
+    if value == "Y":
+        return True
+    result = _check_forked(orgrepo)
+    value = "Y" if result else "N"
+    set_value(key, value)
     return value == "Y"
 
 
