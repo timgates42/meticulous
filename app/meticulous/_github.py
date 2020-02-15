@@ -99,7 +99,7 @@ def checkout(repo, target):
     git = local["/usr/bin/git"]
     with local.cwd(str(target)):
         _ = (
-            git["clone", f"ssh://git@github.com/{user_org}/{repo}", str(clone_target)]
+            git["clone", "--depth=3", f"ssh://git@github.com/{user_org}/{repo}", str(clone_target)]
             & FG
         )
 
