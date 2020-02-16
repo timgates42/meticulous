@@ -12,8 +12,8 @@ cd "${BASEDIR}"
 find . -iname \*.sh -print0 | xargs -0 shellcheck
 # Version independant checks
 PYVER=3.8
-# Run pyspelling in root to check docs
-"python${PYVER}" -m pyspelling
+# Run spelling in root to check docs
+"python${PYVER}" -m spelling
 # Run black to check all python on 3.8 only
 "python${PYVER}" -m black --check --diff "${BASEDIR}"
 cd "${BASEDIR}/app"
@@ -24,7 +24,7 @@ for PYVER in ${PYTHONVERS} ; do
   "python${PYVER}" -m bandit -r "${MODULES[@]}"
   find "${MODULES[@]}" -iname \*.py -print0 | xargs -0 -n 1 "${BASEDIR}/ci/in_docker/pylint.sh" "python${PYVER}"
   PYTEST_FAIL="NO"
-  if ! "python${PYVER}" -m pytest -n auto --cov-config=.coveragerc --cov-fail-under=0 "--cov=${MAIN_MODULE}" --cov-report=xml:test-cov.xml --cov-report=html ; then
+  if ! "python${PYVER}" -m pytest --cov-config=.coveragerc --cov-fail-under=0 "--cov=${MAIN_MODULE}" --cov-report=xml:test-cov.xml --cov-report=html --cov-report=term-missing ; then
     PYTEST_FAIL="YES"
   fi
   if [ ! -z "${TRAVIS_JOB_ID:-}" ] ; then
