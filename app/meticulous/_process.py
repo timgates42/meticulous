@@ -176,7 +176,7 @@ def prepare_a_pr_or_issue(target):  # pylint: disable=unused-argument
         handler(reponame, reposave, context)
 
 
-def get_pr_or_issue_choices(reponame, repodirpath):
+def get_pr_or_issue_choices(reponame, repodirpath):  # pylint: disable=too-many-locals
     """
     Work out the choices menu for pr/issue
     """
@@ -188,7 +188,7 @@ def get_pr_or_issue_choices(reponame, repodirpath):
     prpath = Path("__pr__.txt")
     no_issues = Path("__no_issues__.txt")
     choices = {}
-    for path in (
+    paths = (
         issue_template,
         pr_template,
         contrib_guide,
@@ -196,7 +196,8 @@ def get_pr_or_issue_choices(reponame, repodirpath):
         issue,
         commit,
         no_issues,
-    ):
+    )
+    for path in paths:
         has_path = (repodirpath / path).exists()
         print(f"{reponame} {'HAS' if has_path else 'does not have'}" f" {path}")
         if has_path:
@@ -557,4 +558,11 @@ def get_editor():
     Allow specifying a different editor via the common environment variable
     EDITOR
     """
-    return os.environ.get("EDITOR", "vim")
+    editor_cmd = os.environ.get("METICULOUS_EDITOR", os.environ.get("EDITOR", "vim"))
+    editor_path = shutil.which(editor_cmd)
+    if editor_path is None:
+        raise Exception(
+            "Editor not found, refer to instructions at"
+            " https://meticulous.readthedocs.io/en/latest/"
+        )
+    return editor_path
