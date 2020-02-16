@@ -8,7 +8,7 @@ consider application of new updates.
 # Updates from the Cookiecutter Template
 * Use an (Azure Pipelines)[https://azure.microsoft.com/en-au/services/devops/pipelines/] CI.
 * Follow (3Amigos)[https://3amigos-dev.github.io/] to use CI container pattern.
-* Use (pyspelling)[https://github.com/facelessuser/pyspelling] to check spelling in CI.
+* Use (spelling)[https://github.com/resplendent-dev/spelling] to check spelling in CI.
 * Use (flake8)[https://github.com/PyCQA/flake8] for static code analysis.
 * Use (bandit)[https://github.com/PyCQA/bandit] for security static analysis. 
 * Use (pylint)[https://github.com/PyCQA/pylint] for static code analysis.
@@ -20,7 +20,7 @@ consider application of new updates.
 * Use (pytest-cov)[https://github.com/pytest-dev/pytest-cov] to check 100% unit test coverage.
 * Use (pytest-xdist)[https://github.com/pytest-dev/pytest-xdist] for test parallelization.
 * Use (pytest-azurepipelines)[https://github.com/tonybaloney/pytest-azurepipelines] to publish tests results and coverage to Azure Pipelines Artifacts.
-* Use (resplendent)[https://github.com/resplendent-dev/resplendent] to spell check reStructuredText in pyspelling.
+* Use (resplendent)[https://github.com/resplendent-dev/resplendent] to spell check reStructuredText in spelling.
 * Use (shellcheck)[https://github.com/koalaman/shellcheck] for shell script static analysis.
 * Use (sphinx)[https://github.com/sphinx-doc/sphinx] for documentation generation.
 * Use (twine)[https://github.com/pypa/twine] for publishing to PyPI.

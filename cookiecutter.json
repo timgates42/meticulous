@@ -36,8 +36,8 @@
     "installation_notes": "",
     "extended_readme": "",
     "supports_pytwo": [
-        "yes",
-        "no"
+        "no",
+        "yes"
     ],
     "license": [
         "GPLv3+",
