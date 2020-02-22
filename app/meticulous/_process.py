@@ -60,6 +60,17 @@ def make_choice(choices, message="What do you want to do?"):
     return choices.get(option)
 
 
+def get_confirmation(message="Do you want to continue", defaultval=True):
+    """
+    Call PyInquirer/prompt-toolkit to make a confirmation
+    """
+    menu = [
+        {"type": "confirm", "message": message, "name": "choice", "default": defaultval}
+    ]
+    answers = prompt(menu)
+    return answers.get("choice")
+
+
 def get_input(message):
     """
     Call PyInquirer/prompt-toolkit to make a simple input
@@ -574,4 +585,4 @@ def automated_process(target):  # pylint: disable=unused-argument
     Work out the current point in the automated workflow and process the next
     step.
     """
-    print("load step")
+    print(repr(get_confirmation()))
