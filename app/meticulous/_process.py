@@ -4,6 +4,7 @@ Main processing for meticulous
 from __future__ import absolute_import, division, print_function
 
 import io
+import json
 import os
 import re
 import shutil
@@ -12,7 +13,7 @@ from pathlib import Path
 
 from plumbum import FG, local
 from PyInquirer import prompt
-from spelling.check import check
+from spelling.check import process_results, run_spell_check
 from spelling.store import get_store
 from workflow.engine import GenericWorkflowEngine
 
@@ -529,31 +530,61 @@ def add_one_new_repo(target):
             continue
         print(f"Checkout {repo}")
         checkout(repo, target)
-        repodir = target / repo
-        print(f"Running spell check on {repodir}")
-        spellpath = repodir / "spelling.txt"
-        print(f"Spelling output {spellpath}")
-        with io.open(spellpath, "w", encoding="utf-8") as fobj:
-            os.chdir(repodir)
-            check(
-                display_context=True,
-                display_summary=True,
-                config=None,
-                storage_path=get_spelling_store_path(target),
-                fobj=fobj,
-            )
-        repository_map = get_json_value("repository_map", {})
-        repository_map[repo] = str(repodir)
-        set_json_value("repository_map", repository_map)
-        if not issues_allowed(repo):
-            no_issues_path = repodir / "__no_issues__.txt"
-            with io.open(no_issues_path, "w", encoding="utf-8") as fobj:
-                print("No Issues.", file=fobj)
+        spelling_check(repo, target)
         repository_forked[origrepo] = True
         repository_forked[repo] = True
         set_json_value("repository_forked", repository_forked)
         return repo
     return None
+
+
+def spelling_check(repo, target):
+    """
+    Run the spelling check on the target repo.
+    """
+    repodir = target / repo
+    print(f"Running spell check on {repodir}")
+    spellpath = repodir / "spelling.txt"
+    print(f"Spelling output {spellpath}")
+    all_results = list(
+        run_spell_check(
+            config=None,
+            storage_path=get_spelling_store_path(target),
+            workingpath=repodir,
+        )
+    )
+    with io.open(spellpath, "w", encoding="utf-8") as fobj:
+        success = True
+        for line in process_results(all_results, True, True):
+            print(line, file=fobj)
+            success = False
+        if success:
+            print("Spelling check passed :)", file=fobj)
+    jsonobj = results_to_json(all_results)
+    jsonpath = repodir / "spelling.json"
+    with io.open(jsonpath, "w", encoding="utf-8") as fobj:
+        json.dump(jsonobj, fobj)
+    repository_map = get_json_value("repository_map", {})
+    repository_map[repo] = str(repodir)
+    set_json_value("repository_map", repository_map)
+    if not issues_allowed(repo):
+        no_issues_path = repodir / "__no_issues__.txt"
+        with io.open(no_issues_path, "w", encoding="utf-8") as fobj:
+            print("No Issues.", file=fobj)
+
+
+def results_to_json(all_results):
+    """
+    Save the result format in a machine processable format.
+    """
+    words = {}
+    for results in all_results:
+        if results.words:
+            for word in results.words:
+                words.setdefault(word, []).append(
+                    {"category": results.category, "file": results.context}
+                )
+    return words
 
 
 def test(target):  # pylint: disable=unused-argument
