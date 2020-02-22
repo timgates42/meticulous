@@ -35,6 +35,7 @@ $ pip install meticulous
 - spelling
 - PyInquirer
 - requests
+- workflow
 
 
 ## Download from PyPI.org
