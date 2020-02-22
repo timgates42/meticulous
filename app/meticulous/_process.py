@@ -593,12 +593,15 @@ def automated_process(target):  # pylint: disable=unused-argument
     my_engine.process([State(target)])
 
 
-class State:
+class State:  # pylint: disable=too-few-public-methods
+    """
+    Store the workflow state.
+    """
     def __init__(self, target):
         self.target = target
 
 
-def task_add_repo(obj, eng):
+def task_add_repo(obj, eng):  # pylint: disable=unused-argument
     """
     Ensures a repo has been forked.
     """
@@ -608,14 +611,14 @@ def task_add_repo(obj, eng):
         add_one_new_repo(obj.target)
 
 
-def task_collect_nonwords(obj, eng):
+def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     """
     Saves nonwords until a typo is found
     """
     print(f"Checking nonwords...")
 
 
-def task_submit(obj, eng):
+def task_submit(obj, eng):  # pylint: disable=unused-argument
     """
     Submits the typo
     """
