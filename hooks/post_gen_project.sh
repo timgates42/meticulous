@@ -14,6 +14,7 @@ git checkout -- \
  app/meticulous \
  app/tests \
  app/.gitignore \
- docs
+ docs \
+ NEWS.rst
 
 rm -rf app/pip/2.7 app/pip/3.5
