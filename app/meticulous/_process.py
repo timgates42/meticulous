@@ -14,6 +14,7 @@ from plumbum import FG, local
 from PyInquirer import prompt
 from spelling.check import check
 from spelling.store import get_store
+from workflow.engine import GenericWorkflowEngine
 
 from meticulous._github import (
     check_forked,
@@ -585,4 +586,37 @@ def automated_process(target):  # pylint: disable=unused-argument
     Work out the current point in the automated workflow and process the next
     step.
     """
-    print(repr(get_confirmation()))
+    my_engine = GenericWorkflowEngine()
+    my_engine.callbacks.replace(
+        [task_add_repo, task_collect_nonwords, task_submit]
+    )
+    my_engine.process([State(target)])
+
+
+class State:
+    def __init__(self, target):
+        self.target = target
+
+
+def task_add_repo(obj, eng):
+    """
+    Ensures a repo has been forked.
+    """
+    key = "repository_map"
+    repository_list = get_json_value(key, {})
+    if not repository_list:
+        add_one_new_repo(obj.target)
+
+
+def task_collect_nonwords(obj, eng):
+    """
+    Saves nonwords until a typo is found
+    """
+    print(f"Checking nonwords...")
+
+
+def task_submit(obj, eng):
+    """
+    Submits the typo
+    """
+    print(f"Submitting typo...")
