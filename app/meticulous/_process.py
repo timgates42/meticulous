@@ -97,6 +97,7 @@ def run_invocation(target):
     while True:
         try:
             lookup = {
+                "automated process": automated_process,
                 "examine a repository": examine_repo_selection,
                 "manually add a new repository": manually_add_new_repo,
                 "remove a repository": remove_repo_selection,
@@ -566,3 +567,11 @@ def get_editor():
             " https://meticulous.readthedocs.io/en/latest/"
         )
     return editor_path
+
+
+def automated_process(target):  # pylint: disable=unused-argument
+    """
+    Work out the current point in the automated workflow and process the next
+    step.
+    """
+    print("load step")
