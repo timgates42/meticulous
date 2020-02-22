@@ -587,9 +587,7 @@ def automated_process(target):  # pylint: disable=unused-argument
     step.
     """
     my_engine = GenericWorkflowEngine()
-    my_engine.callbacks.replace(
-        [task_add_repo, task_collect_nonwords, task_submit]
-    )
+    my_engine.callbacks.replace([task_add_repo, task_collect_nonwords, task_submit])
     my_engine.process([State(target)])
 
 
@@ -597,6 +595,7 @@ class State:  # pylint: disable=too-few-public-methods
     """
     Store the workflow state.
     """
+
     def __init__(self, target):
         self.target = target
 
