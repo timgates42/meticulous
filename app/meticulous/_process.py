@@ -645,7 +645,31 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     """
     Saves nonwords until a typo is found
     """
-    print(f"Checking nonwords...")
+    key = "repository_map"
+    repository_list = get_json_value(key, {})
+    count = len(repository_list)
+    if count != 1:
+        print(f"Unexpected number of repostories - {count}")
+        return
+    repodir = next(iter(repository_list.values()))
+    repodirpath = Path(repodir)
+    jsonpath = repodirpath / "spelling.json"
+    with io.open(jsonpath, "r", encoding="utf-8") as fobj:
+        jsonobj = json.load(fobj)
+    words = get_sorted_words(jsonobj)
+    for word in words:
+        print(f"Checking word {word}")
+
+
+def get_sorted_words(jsonobj):
+    """
+    Sort the words first by frequency
+    """
+    order = []
+    for word, details in jsonobj.items():
+        order.append(((len(details),), word))
+    order.sort()
+    return [word for _, word in order]
 
 
 def task_submit(obj, eng):  # pylint: disable=unused-argument
