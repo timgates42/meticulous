@@ -10,6 +10,7 @@ import re
 import shutil
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 from colorama import Fore, Style, init
 from plumbum import FG, local
@@ -406,15 +407,22 @@ def add_change_for_repo(repodir):
     print(f"Changing {del_word} to {add_word} in {', '.join(file_paths)}")
     option = make_simple_choice(["save"], "Do you want to save?")
     if option == "save":
-        saves = get_json_value("repository_saves", {})
-        reponame = Path(repodir).name
-        saves[reponame] = {
-            "add_word": add_word,
-            "del_word": del_word,
-            "file_paths": file_paths,
-            "repodir": repodir,
-        }
-        set_json_value("repository_saves", saves)
+        add_repo_save(repodir, add_word, del_word, file_paths)
+
+
+def add_repo_save(repodir, add_word, del_word, file_paths):
+    """
+    Record a typo correction
+    """
+    saves = get_json_value("repository_saves", {})
+    reponame = Path(repodir).name
+    saves[reponame] = {
+        "add_word": add_word,
+        "del_word": del_word,
+        "file_paths": file_paths,
+        "repodir": repodir,
+    }
+    set_json_value("repository_saves", saves)
 
 
 def get_typo(repodir):
@@ -630,16 +638,31 @@ def test(target):  # pylint: disable=unused-argument
 def get_editor():
     """
     Allow specifying a different editor via the common environment variable
-    EDITOR
+    EDITOR or METICULOUS_EDITOR
     """
-    editor_cmd = os.environ.get("METICULOUS_EDITOR", os.environ.get("EDITOR", "vim"))
-    editor_path = shutil.which(editor_cmd)
-    if editor_path is None:
+    return get_app("EDITOR", "vim")
+
+
+def get_browser():
+    """
+    Allow specifying a different browser via the common environment variable
+    BROWSER OR METICULOUS_BROWSER
+    """
+    return get_app("BROWSER", "links")
+
+
+def get_app(envname, defltval):
+    """
+    Allow specifying a different command via its common environment variable
+    """
+    app_cmd = os.environ.get(f"METICULOUS_{envname}", os.environ.get(envname, defltval))
+    app_path = shutil.which(app_cmd)
+    if app_path is None:
         raise Exception(
-            "Editor not found, refer to instructions at"
-            " https://meticulous.readthedocs.io/en/latest/"
+            f"{envname} not found, refer to instructions at"
+            f" https://meticulous.readthedocs.io/en/latest/"
         )
-    return editor_path
+    return app_path
 
 
 def automated_process(target):  # pylint: disable=unused-argument
@@ -676,10 +699,11 @@ class NonwordState:  # pylint: disable=too-few-public-methods
     Store the nonword workflow state.
     """
 
-    def __init__(self, target, word, details):
+    def __init__(self, target, word, details, repopath):
         self.target = target
         self.word = word
         self.details = details
+        self.repopath = repopath
         self.done = False
 
 
@@ -704,7 +728,14 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     for word in words:
         try:
             my_engine.process(
-                [NonwordState(target=obj.target, word=word, details=jsonobj[word])]
+                [
+                    NonwordState(
+                        target=obj.target,
+                        word=word,
+                        details=jsonobj[word],
+                        repopath=repodirpath,
+                    )
+                ]
             )
         except HaltProcessing:
             return
@@ -726,7 +757,7 @@ def is_typo(obj, eng):
     """
     show_word(obj.word, obj.details)
     if get_confirmation("Is it typo?"):
-        handle_typo(obj.word, obj.details)
+        handle_typo(obj.word, obj.details, obj.repopath)
         obj.done = True
         eng.halt("found typo")
 
@@ -760,6 +791,14 @@ def get_colourized(line, word):
     """
     Highlight the matching word for lines it is found on.
     """
+    replacement = "".join([Fore.YELLOW, word, Style.RESET_ALL])
+    return perform_replacement(line, word, replacement)
+
+
+def perform_replacement(line, word, replacement):
+    """
+    Run the provided word replacement
+    """
     regex = re.compile(f"\\b({re.escape(word)})\\b")
     if not regex.search(line):
         return None
@@ -769,9 +808,7 @@ def get_colourized(line, word):
         match_start = match.start(1)
         match_end = match.end(1)
         result.append(line[pos:match_start])
-        result.append(Fore.YELLOW)
-        result.append(line[match_start:match_end])
-        result.append(Style.RESET_ALL)
+        result.append(replacement)
         pos = match_end
     result.append(line[pos:])
     return "".join(result)
@@ -784,11 +821,43 @@ def handle_nonword(word, details):  # pylint: disable=unused-argument
     print("Todo handle nonword.")
 
 
-def handle_typo(word, details):  # pylint: disable=unused-argument
+def handle_typo(word, details, repopath):  # pylint: disable=unused-argument
     """
     Handle a typo
     """
-    print("Todo handle typo.")
+    if get_confirmation(f"Do you want to google {word}"):
+        browser = local[get_browser()]
+        search = f"https://www.google.com.au/search?q={quote(word)}"
+        _ = browser[search] & FG
+    newspell = get_input(f"How do you spell {word}?")
+    if newspell:
+        fix_word(word, details, newspell, repopath)
+
+
+def fix_word(word, details, newspell, repopath):
+    """
+    Save the correction
+    """
+    print(f"Changing {word} to {newspell}")
+    files = sorted(set(context_to_filename(detail["file"]) for detail in details))
+    file_paths = []
+    for filename in files:
+        lines = []
+        with io.open(filename, "r", encoding="utf-8") as fobj:
+            for line in fobj:
+                line = line.rstrip("\r\n")
+                output = perform_replacement(line, word, newspell)
+                lines.append(output if output is not None else line)
+        with io.open(filename, "w", encoding="utf-8") as fobj:
+            for line in lines:
+                print(line, file=fobj)
+        git = local["git"]
+        filepath = Path(filename)
+        relpath = str(filepath.relative_to(repopath))
+        with local.cwd(str(repopath)):
+            _ = git["add"][relpath] & FG
+        file_paths.append(relpath)
+    add_repo_save(str(repopath), newspell, word, file_paths)
 
 
 def get_sorted_words(jsonobj):
