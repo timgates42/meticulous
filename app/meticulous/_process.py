@@ -107,6 +107,16 @@ def run_invocation(target):
         print(f"Target {target} is not a directory.", file=sys.stderr)
         sys.exit(1)
     prepare()
+    if get_confirmation("Run automated process"):
+        automated_process(target)
+    else:
+        manual_menu(target)
+
+
+def manual_menu(target):
+    """
+    Present the main menu
+    """
     while True:
         try:
             lookup = {
