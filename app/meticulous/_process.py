@@ -10,6 +10,7 @@ import re
 import shutil
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 from colorama import Fore, Style, init
 from plumbum import FG, local
@@ -630,16 +631,31 @@ def test(target):  # pylint: disable=unused-argument
 def get_editor():
     """
     Allow specifying a different editor via the common environment variable
-    EDITOR
+    EDITOR or METICULOUS_EDITOR
     """
-    editor_cmd = os.environ.get("METICULOUS_EDITOR", os.environ.get("EDITOR", "vim"))
-    editor_path = shutil.which(editor_cmd)
-    if editor_path is None:
+    return get_app("EDITOR", "vim")
+
+
+def get_browser():
+    """
+    Allow specifying a different browser via the common environment variable
+    BROWSER OR METICULOUS_BROWSER
+    """
+    return get_app("BROWSER", "links")
+
+
+def get_app(envname, defltval):
+    """
+    Allow specifying a different command via its common environment variable
+    """
+    app_cmd = os.environ.get(f"METICULOUS_{envname}", os.environ.get(envname, defltval))
+    app_path = shutil.which(app_cmd)
+    if app_path is None:
         raise Exception(
-            "Editor not found, refer to instructions at"
-            " https://meticulous.readthedocs.io/en/latest/"
+            f"{envname} not found, refer to instructions at"
+            f" https://meticulous.readthedocs.io/en/latest/"
         )
-    return editor_path
+    return app_path
 
 
 def automated_process(target):  # pylint: disable=unused-argument
@@ -795,6 +811,7 @@ def handle_typo(word, details):  # pylint: disable=unused-argument
     newspell = get_input(f"How do you spell {word}?")
     if newspell:
         fix_word(word, details, newspell)
+
 
 def fix_word(word, details, newspell):
     """
