@@ -407,15 +407,22 @@ def add_change_for_repo(repodir):
     print(f"Changing {del_word} to {add_word} in {', '.join(file_paths)}")
     option = make_simple_choice(["save"], "Do you want to save?")
     if option == "save":
-        saves = get_json_value("repository_saves", {})
-        reponame = Path(repodir).name
-        saves[reponame] = {
-            "add_word": add_word,
-            "del_word": del_word,
-            "file_paths": file_paths,
-            "repodir": repodir,
-        }
-        set_json_value("repository_saves", saves)
+        add_repo_save(repodir, add_word, del_word, file_paths)
+
+
+def add_repo_save(repodir, add_word, del_word, file_paths):
+    """
+    Record a typo correction
+    """
+    saves = get_json_value("repository_saves", {})
+    reponame = Path(repodir).name
+    saves[reponame] = {
+        "add_word": add_word,
+        "del_word": del_word,
+        "file_paths": file_paths,
+        "repodir": repodir,
+    }
+    set_json_value("repository_saves", saves)
 
 
 def get_typo(repodir):
@@ -633,31 +640,29 @@ def get_editor():
     Allow specifying a different editor via the common environment variable
     EDITOR or METICULOUS_EDITOR
     """
-    editor_cmd = os.environ.get("METICULOUS_EDITOR", os.environ.get("EDITOR", "vim"))
-    editor_path = shutil.which(editor_cmd)
-    if editor_path is None:
-        raise Exception(
-            "Editor not found, refer to instructions at"
-            " https://meticulous.readthedocs.io/en/latest/"
-        )
-    return editor_path
+    return get_app("EDITOR", "vim")
 
 
 def get_browser():
     """
     Allow specifying a different browser via the common environment variable
-    BROWSER or METICULOUS_BROWSER
+    BROWSER OR METICULOUS_BROWSER
     """
-    browser_cmd = os.environ.get(
-        "METICULOUS_BROWSER", os.environ.get("BROWSER", "links")
-    )
-    browser_path = shutil.which(browser_cmd)
-    if browser_path is None:
+    return get_app("BROWSER", "links")
+
+
+def get_app(envname, defltval):
+    """
+    Allow specifying a different command via its common environment variable
+    """
+    app_cmd = os.environ.get(f"METICULOUS_{envname}", os.environ.get(envname, defltval))
+    app_path = shutil.which(app_cmd)
+    if app_path is None:
         raise Exception(
-            "Browser not found, refer to instructions at"
-            " https://meticulous.readthedocs.io/en/latest/"
+            f"{envname} not found, refer to instructions at"
+            f" https://meticulous.readthedocs.io/en/latest/"
         )
-    return browser_path
+    return app_path
 
 
 def automated_process(target):  # pylint: disable=unused-argument
@@ -723,7 +728,14 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     for word in words:
         try:
             my_engine.process(
-                [NonwordState(target=obj.target, word=word, details=jsonobj[word], repopath=repodirpath)]
+                [
+                    NonwordState(
+                        target=obj.target,
+                        word=word,
+                        details=jsonobj[word],
+                        repopath=repodirpath,
+                    )
+                ]
             )
         except HaltProcessing:
             return
@@ -828,6 +840,7 @@ def fix_word(word, details, newspell, repopath):
     """
     print(f"Changing {word} to {newspell}")
     files = sorted(set(context_to_filename(detail["file"]) for detail in details))
+    file_paths = []
     for filename in files:
         lines = []
         with io.open(filename, "r", encoding="utf-8") as fobj:
@@ -839,8 +852,12 @@ def fix_word(word, details, newspell, repopath):
             for line in lines:
                 print(line, file=fobj)
         git = local["git"]
+        filepath = Path(filename)
+        relpath = str(filepath.relative_to(repopath))
         with local.cwd(str(repopath)):
-            git['add'][filename]
+            _ = git["add"][relpath] & FG
+        file_paths.append(relpath)
+    add_repo_save(str(repopath), newspell, word, file_paths)
 
 
 def get_sorted_words(jsonobj):
