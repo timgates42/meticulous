@@ -788,7 +788,28 @@ def handle_typo(word, details):  # pylint: disable=unused-argument
     """
     Handle a typo
     """
-    print("Todo handle typo.")
+    if get_confirmation(f"Do you want to google {word}"):
+        browser = local[get_browser()]
+        search = f"https://www.google.com.au/search?q={quote(word)}"
+        _ = browser[search] & FG
+    newspell = get_input(f"How do you spell {word}?")
+    if newspell:
+        fix_word(word, details, newspell)
+
+def fix_word(word, details, newspell):
+    """
+    Save the correction
+    """
+    print(f"Changing {word} to {newspell}")
+    files = sorted(set(context_to_filename(detail["file"]) for detail in details))
+    for filename in files:
+        lines = []
+        with io.open(filename, "r", encoding="utf-8") as fobj:
+            for line in fobj:
+                line = line.rstrip("\r\n")
+                output = get_colourized(line, word)
+                if output:
+                    print(output)
 
 
 def get_sorted_words(jsonobj):
