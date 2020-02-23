@@ -16,6 +16,7 @@ from PyInquirer import prompt
 from spelling.check import process_results, run_spell_check
 from spelling.store import get_store
 from workflow.engine import GenericWorkflowEngine
+from workflow.errors import HaltProcessing
 
 from meticulous._github import (
     check_forked,
@@ -651,6 +652,18 @@ def task_add_repo(obj, eng):  # pylint: disable=unused-argument
         add_one_new_repo(obj.target)
 
 
+class NonwordState:  # pylint: disable=too-few-public-methods
+    """
+    Store the nonword workflow state.
+    """
+
+    def __init__(self, target, word, details):
+        self.target = target
+        self.word = word
+        self.details = details
+        self.done = False
+
+
 def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     """
     Saves nonwords until a typo is found
@@ -667,8 +680,68 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     with io.open(jsonpath, "r", encoding="utf-8") as fobj:
         jsonobj = json.load(fobj)
     words = get_sorted_words(jsonobj)
+    my_engine = GenericWorkflowEngine()
+    my_engine.callbacks.replace(
+        [is_nonword, is_typo, what_now]
+    )
     for word in words:
-        print(f"Checking word {word}")
+        try:
+            my_engine.process(
+                [NonwordState(target=obj.target, word=word, details=jsonobj[word])]
+            )
+        except HaltProcessing:
+            return
+
+
+def is_nonword(obj, eng):
+    """
+    Quick initial check to see if it is a nonword.
+    """
+    show_word(obj.word, obj.details)
+    if get_confirmation("Is non-word?"):
+        handle_nonword(obj.word, obj.details)
+        eng.halt("found nonword")
+
+
+def is_typo(obj, eng):
+    """
+    Quick initial check to see if it is a typo.
+    """
+    show_word(obj.word, obj.details)
+    if get_confirmation("Is it typo?"):
+        handle_typo(obj.word, obj.details)
+        obj.done = True
+        eng.halt("found typo")
+
+
+def what_now(obj, eng):
+    """
+    Check to see what else to do.
+    """
+    show_word(obj.word, obj.details)
+    print("Todo what now options?")
+    eng.halt("what now?")
+
+
+def show_word(word, details):  # pylint: disable=unused-argument
+    """
+    Display the word and its context.
+    """
+    print(f"Checking word {word}")
+
+
+def handle_nonword(word, details):  # pylint: disable=unused-argument
+    """
+    Handle a nonword
+    """
+    print("Todo handle nonword.")
+
+
+def handle_typo(word, details):  # pylint: disable=unused-argument
+    """
+    Handle a typo
+    """
+    print("Todo handle typo.")
 
 
 def get_sorted_words(jsonobj):
