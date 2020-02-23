@@ -651,7 +651,7 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     if count != 1:
         print(f"Unexpected number of repostories - {count}")
         return
-    repodir = repository_list.values().next()
+    repodir = next(iter(repository_list.values()))
     jsonpath = repodir / "spelling.json"
     with io.open(jsonpath, "r", encoding="utf-8") as fobj:
         jsonobj = json.load(fobj)
