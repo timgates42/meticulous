@@ -36,6 +36,7 @@ $ pip install meticulous
 - PyInquirer
 - requests
 - workflow
+- colorama
 
 
 ## Download from PyPI.org
