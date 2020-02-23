@@ -5,7 +5,7 @@ isort
 mock
 pylint
 pytest
-pytest-azurepipelines
+pytest-azurepipelines42
 pytest-cov
 pytest-xdist
 safety
