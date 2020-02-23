@@ -681,9 +681,7 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
         jsonobj = json.load(fobj)
     words = get_sorted_words(jsonobj)
     my_engine = GenericWorkflowEngine()
-    my_engine.callbacks.replace(
-        [is_nonword, is_typo, what_now]
-    )
+    my_engine.callbacks.replace([is_nonword, is_typo, what_now])
     for word in words:
         try:
             my_engine.process(
