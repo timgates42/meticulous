@@ -11,6 +11,7 @@ import shutil
 import sys
 from pathlib import Path
 
+from colorama import Fore, Style, init
 from plumbum import FG, local
 from PyInquirer import prompt
 from spelling.check import process_results, run_spell_check
@@ -107,6 +108,7 @@ def run_invocation(target):
     if not target.is_dir():
         print(f"Target {target} is not a directory.", file=sys.stderr)
         sys.exit(1)
+    init()
     prepare()
     if get_confirmation("Run automated process"):
         automated_process(target)
@@ -592,10 +594,27 @@ def results_to_json(all_results):
     for results in all_results:
         if results.words:
             for word in results.words:
+                filename = context_to_filename(results.context)
                 words.setdefault(word, []).append(
-                    {"category": results.category, "file": results.context}
+                    {"category": results.category, "file": filename}
                 )
     return words
+
+
+def context_to_filename(name):
+    """
+    Turn a context line into the filepath.
+    """
+    testname = name
+    if os.path.isfile(testname):
+        return testname
+    testname = testname.split(":", 1)[0]
+    if os.path.isfile(testname):
+        return testname
+    testname = testname.rsplit("(", 1)[0]
+    if os.path.isfile(testname):
+        return testname
+    raise Exception(f"Unable to get filepath for {name}")
 
 
 def test(target):  # pylint: disable=unused-argument
@@ -726,6 +745,36 @@ def show_word(word, details):  # pylint: disable=unused-argument
     Display the word and its context.
     """
     print(f"Checking word {word}")
+    files = sorted(set(context_to_filename(detail["file"]) for detail in details))
+    for filename in files:
+        print(f"{filename}:")
+        with io.open(filename, "r", encoding="utf-8") as fobj:
+            for line in fobj:
+                line = line.rstrip("\r\n")
+                output = get_colourized(line, word)
+                if output:
+                    print(output)
+
+
+def get_colourized(line, word):
+    """
+    Highlight the matching word for lines it is found on.
+    """
+    regex = re.compile(f"\\b({re.escape(word)})\\b")
+    if not regex.search(line):
+        return None
+    result = []
+    pos = 0
+    for match in regex.finditer(line):
+        match_start = match.start(1)
+        match_end = match.end(1)
+        result.append(line[pos:match_start])
+        result.append(Fore.YELLOW)
+        result.append(line[match_start:match_end])
+        result.append(Style.RESET_ALL)
+        pos = match_end
+    result.append(line[pos:])
+    return "".join(result)
 
 
 def handle_nonword(word, details):  # pylint: disable=unused-argument
