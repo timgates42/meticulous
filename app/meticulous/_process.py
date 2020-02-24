@@ -193,6 +193,12 @@ def prepare_a_pr_or_issue(target):  # pylint: disable=unused-argument
     Select an available repository to prepare a change
     """
     reponame, reposave = pick_repo_save()
+
+
+def prepare_a_pr_or_issue_for(reponame, reposave):
+    """
+    Access repository to prepare a change
+    """
     while True:
         repodir = reposave["repodir"]
         repodirpath = Path(repodir)
@@ -875,4 +881,10 @@ def task_submit(obj, eng):  # pylint: disable=unused-argument
     """
     Submits the typo
     """
-    print(f"Submitting typo...")
+    repository_saves = get_json_value("repository_saves", {})
+    count = len(repository_saves)
+    if count != 1:
+        print(f"Unexpected number of repostories - {count}")
+        return
+    reponame, reposave = next(iter(repository_saves.items()))
+    prepare_a_pr_or_issue_for(reponame, reposave)
