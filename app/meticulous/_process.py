@@ -732,19 +732,17 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     my_engine = GenericWorkflowEngine()
     my_engine.callbacks.replace([is_nonword, is_typo, what_now])
     for word in words:
+        state = NonwordState(
+            target=obj.target,
+            word=word,
+            details=jsonobj[word],
+            repopath=repodirpath,
+        )
         try:
-            my_engine.process(
-                [
-                    NonwordState(
-                        target=obj.target,
-                        word=word,
-                        details=jsonobj[word],
-                        repopath=repodirpath,
-                    )
-                ]
-            )
+            my_engine.process([state])
         except HaltProcessing:
-            return
+            if state.done:
+                return
 
 
 def is_nonword(obj, eng):
