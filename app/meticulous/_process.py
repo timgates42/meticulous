@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 from urllib.parse import quote
 
+import unanimous.util
 from colorama import Fore, Style, init
 from plumbum import FG, local
 from PyInquirer import prompt
@@ -30,6 +31,7 @@ from meticulous._github import (
     is_archived,
     issues_allowed,
 )
+from meticulous._nonword import add_non_word
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 
@@ -193,6 +195,13 @@ def prepare_a_pr_or_issue(target):  # pylint: disable=unused-argument
     Select an available repository to prepare a change
     """
     reponame, reposave = pick_repo_save()
+    prepare_a_pr_or_issue_for(reponame, reposave)
+
+
+def prepare_a_pr_or_issue_for(reponame, reposave):
+    """
+    Access repository to prepare a change
+    """
     while True:
         repodir = reposave["repodir"]
         repodirpath = Path(repodir)
@@ -726,28 +735,25 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     my_engine = GenericWorkflowEngine()
     my_engine.callbacks.replace([is_nonword, is_typo, what_now])
     for word in words:
+        state = NonwordState(
+            target=obj.target, word=word, details=jsonobj[word], repopath=repodirpath,
+        )
         try:
-            my_engine.process(
-                [
-                    NonwordState(
-                        target=obj.target,
-                        word=word,
-                        details=jsonobj[word],
-                        repopath=repodirpath,
-                    )
-                ]
-            )
+            my_engine.process([state])
         except HaltProcessing:
-            return
+            if state.done:
+                return
 
 
 def is_nonword(obj, eng):
     """
     Quick initial check to see if it is a nonword.
     """
+    if unanimous.util.is_nonword(obj.word):
+        eng.halt("existing nonword")
     show_word(obj.word, obj.details)
     if get_confirmation("Is non-word?"):
-        handle_nonword(obj.word, obj.details)
+        handle_nonword(obj.word, obj.target)
         eng.halt("found nonword")
 
 
@@ -814,11 +820,11 @@ def perform_replacement(line, word, replacement):
     return "".join(result)
 
 
-def handle_nonword(word, details):  # pylint: disable=unused-argument
+def handle_nonword(word, target):  # pylint: disable=unused-argument
     """
     Handle a nonword
     """
-    print("Todo handle nonword.")
+    add_non_word(word, target)
 
 
 def handle_typo(word, details, repopath):  # pylint: disable=unused-argument
@@ -875,4 +881,10 @@ def task_submit(obj, eng):  # pylint: disable=unused-argument
     """
     Submits the typo
     """
-    print(f"Submitting typo...")
+    repository_saves = get_json_value("repository_saves", {})
+    count = len(repository_saves)
+    if count != 1:
+        print(f"Unexpected number of repostories - {count}")
+        return
+    reponame, reposave = next(iter(repository_saves.items()))
+    prepare_a_pr_or_issue_for(reponame, reposave)

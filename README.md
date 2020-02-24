@@ -32,7 +32,9 @@ $ pip install meticulous
 ## Prerequisites:
 - PyGithub
 - plumbum
-- spelling
+- spelling>=0.6.3
+- dataset<1.2.0
+- unanimous>=0.6.4
 - PyInquirer
 - requests
 - workflow
