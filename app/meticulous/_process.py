@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 from urllib.parse import quote
 
+import unanimous.util
 from colorama import Fore, Style, init
 from plumbum import FG, local
 from PyInquirer import prompt
@@ -30,6 +31,7 @@ from meticulous._github import (
     is_archived,
     issues_allowed,
 )
+from meticulous._nonword import add_non_word
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 
@@ -193,6 +195,7 @@ def prepare_a_pr_or_issue(target):  # pylint: disable=unused-argument
     Select an available repository to prepare a change
     """
     reponame, reposave = pick_repo_save()
+    prepare_a_pr_or_issue_for(reponame, reposave)
 
 
 def prepare_a_pr_or_issue_for(reponame, reposave):
@@ -746,9 +749,11 @@ def is_nonword(obj, eng):
     """
     Quick initial check to see if it is a nonword.
     """
+    if unanimous.util.is_nonword(obj.word):
+        eng.halt("existing nonword")
     show_word(obj.word, obj.details)
     if get_confirmation("Is non-word?"):
-        handle_nonword(obj.word, obj.details)
+        handle_nonword(obj.word, obj.target)
         eng.halt("found nonword")
 
 
@@ -815,11 +820,11 @@ def perform_replacement(line, word, replacement):
     return "".join(result)
 
 
-def handle_nonword(word, details):  # pylint: disable=unused-argument
+def handle_nonword(word, target):  # pylint: disable=unused-argument
     """
     Handle a nonword
     """
-    print("Todo handle nonword.")
+    add_non_word(word, target)
 
 
 def handle_typo(word, details, repopath):  # pylint: disable=unused-argument
