@@ -25,7 +25,7 @@
     "build_url": "https://dev.azure.com/{{ cookiecutter.azure_user }}/{{ cookiecutter.azure_project }}/_build/latest?definitionId={{ cookiecutter.azure_buildid }}&branchName=master",
     "pypi_name": "{{ cookiecutter.project_name }}",
     "readthedocs_name": "{{ cookiecutter.project_name }}",
-    "app_requirements": "PyGithub\nplumbum\nspelling\nPyInquirer\nrequests\nworkflow\ncolorama",
+    "app_requirements": "PyGithub\nplumbum\nspelling>=0.6.3\ndataset<1.2.0\nunanimous>=0.6.4\nPyInquirer\nrequests\nworkflow\ncolorama",
     "cov_fail_under": "0",
     "travis_status_url": "https://travis-ci.org/{{ cookiecutter.github_org }}/{{ cookiecutter.github_repo }}.svg?branch=master",
     "travis_build_url": "https://travis-ci.org/{{ cookiecutter.github_org }}/{{ cookiecutter.github_repo }}",
