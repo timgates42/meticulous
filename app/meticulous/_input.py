@@ -45,7 +45,7 @@ def get_confirmation(message="Do you want to continue", defaultval=True):
 
 def check_cancel(result):
     """
-    Raise an exception for cancelations.
+    Raise an exception for cancellations.
     """
     if result is None:
         raise UserCancel()
