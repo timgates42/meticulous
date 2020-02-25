@@ -15,7 +15,6 @@ from urllib.parse import quote
 import unanimous.util
 from colorama import Fore, Style, init
 from plumbum import FG, local
-from PyInquirer import prompt
 from spelling.check import process_results, run_spell_check
 from spelling.store import get_store
 from workflow.engine import GenericWorkflowEngine
@@ -31,6 +30,13 @@ from meticulous._github import (
     is_archived,
     issues_allowed,
 )
+from meticulous._input import (
+    UserCancel,
+    get_confirmation,
+    get_input,
+    make_choice,
+    make_simple_choice,
+)
 from meticulous._nonword import add_non_word
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
@@ -44,48 +50,6 @@ def get_spelling_store_path(target):
     if not path.is_dir():
         path.mkdir()
     return path / "spelling.db"
-
-
-def make_simple_choice(choices, message="What do you want to do?"):
-    """
-    Make a choice using a simple {key: key} list of choices
-    """
-    return make_choice({choice: choice for choice in choices}, message=message)
-
-
-def make_choice(choices, message="What do you want to do?"):
-    """
-    Call PyInquirer/prompt-toolkit to make a choice
-    """
-    choicelist = sorted(list(choices.keys()))
-    choicelist.append("- quit -")
-    menu = [
-        {"type": "list", "name": "option", "message": message, "choices": choicelist}
-    ]
-    answers = prompt(menu)
-    option = answers.get("option", "- quit -")
-    return choices.get(option)
-
-
-def get_confirmation(message="Do you want to continue", defaultval=True):
-    """
-    Call PyInquirer/prompt-toolkit to make a confirmation
-    """
-    menu = [
-        {"type": "confirm", "message": message, "name": "choice", "default": defaultval}
-    ]
-    answers = prompt(menu)
-    return answers.get("choice")
-
-
-def get_input(message):
-    """
-    Call PyInquirer/prompt-toolkit to make a simple input
-    """
-    menu = [{"type": "input", "name": "option", "message": message}]
-    answers = prompt(menu)
-    option = answers.get("option")
-    return option
 
 
 class ProcessingFailed(Exception):
@@ -113,10 +77,13 @@ def run_invocation(target):
         sys.exit(1)
     init()
     prepare()
-    if get_confirmation("Run automated process"):
-        automated_process(target)
-    else:
-        manual_menu(target)
+    try:
+        if get_confirmation("Run automated process"):
+            automated_process(target)
+        else:
+            manual_menu(target)
+    except UserCancel:
+        print("Quit by user.")
 
 
 def manual_menu(target):
@@ -736,7 +703,7 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     my_engine.callbacks.replace([is_nonword, is_typo, what_now])
     for word in words:
         state = NonwordState(
-            target=obj.target, word=word, details=jsonobj[word], repopath=repodirpath,
+            target=obj.target, word=word, details=jsonobj[word], repopath=repodirpath
         )
         try:
             my_engine.process([state])
