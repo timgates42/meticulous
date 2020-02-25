@@ -31,6 +31,7 @@ from meticulous._github import (
     issues_allowed,
 )
 from meticulous._input import (
+    UserCancel,
     get_confirmation,
     get_input,
     make_choice,
@@ -76,10 +77,13 @@ def run_invocation(target):
         sys.exit(1)
     init()
     prepare()
-    if get_confirmation("Run automated process"):
-        automated_process(target)
-    else:
-        manual_menu(target)
+    try:
+        if get_confirmation("Run automated process"):
+            automated_process(target)
+        else:
+            manual_menu(target)
+    except UserCancel:
+        print("Quit by user.")
 
 
 def manual_menu(target):
