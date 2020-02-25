@@ -40,6 +40,7 @@ from meticulous._input import (
 from meticulous._nonword import add_non_word
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
+from meticulous._websearch import get_suggestion
 
 
 def get_spelling_store_path(target):
@@ -700,7 +701,7 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
         jsonobj = json.load(fobj)
     words = get_sorted_words(jsonobj)
     my_engine = GenericWorkflowEngine()
-    my_engine.callbacks.replace([is_nonword, is_typo, what_now])
+    my_engine.callbacks.replace([check_websearch, is_nonword, is_typo, what_now])
     for word in words:
         state = NonwordState(
             target=obj.target, word=word, details=jsonobj[word], repopath=repodirpath
@@ -712,12 +713,38 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
                 return
 
 
+def check_websearch(obj, eng):
+    """
+    Quick initial check to see if a websearch provides a suggestion.
+    """
+    if unanimous.util.is_nonword(obj.word):
+        eng.halt("existing nonword")
+    suggestion = get_suggestion(obj.word)
+    if suggestion is None:
+        return
+    show_word(obj.word, obj.details)
+    if suggestion.is_nonword:
+        if get_confirmation("Web search suggests it is a non-word, agree?"):
+            handle_nonword(obj.word, obj.target)
+            eng.halt("found nonword")
+    if suggestion.is_typo:
+        if suggestion.replacement:
+            if get_confirmation(
+                f"Web search suggests using {suggestion.replacement}, agree?"
+            ):
+                fix_word(obj.word, obj.details, suggestion.replacement, obj.repopath)
+                obj.done = True
+                eng.halt("found typo")
+        if get_confirmation("Web search suggests typo, agree?"):
+            handle_typo(obj.word, obj.details, obj.repopath)
+            obj.done = True
+            eng.halt("found typo")
+
+
 def is_nonword(obj, eng):
     """
     Quick initial check to see if it is a nonword.
     """
-    if unanimous.util.is_nonword(obj.word):
-        eng.halt("existing nonword")
     show_word(obj.word, obj.details)
     if get_confirmation("Is non-word?"):
         handle_nonword(obj.word, obj.target)
