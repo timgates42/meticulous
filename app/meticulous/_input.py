@@ -5,6 +5,12 @@ Common user input utilities.
 from PyInquirer import prompt
 
 
+class UserCancel(Exception):
+    """
+    Raised if a user cancels an input.
+    """
+
+
 def make_simple_choice(choices, message="What do you want to do?"):
     """
     Make a choice using a simple {key: key} list of choices
@@ -23,7 +29,7 @@ def make_choice(choices, message="What do you want to do?"):
     ]
     answers = prompt(menu)
     option = answers.get("option", "- quit -")
-    return choices.get(option)
+    return check_cancel(choices.get(option))
 
 
 def get_confirmation(message="Do you want to continue", defaultval=True):
@@ -34,7 +40,16 @@ def get_confirmation(message="Do you want to continue", defaultval=True):
         {"type": "confirm", "message": message, "name": "choice", "default": defaultval}
     ]
     answers = prompt(menu)
-    return answers.get("choice")
+    return check_cancel(answers.get("choice"))
+
+
+def check_cancel(result):
+    """
+    Raise an exception for cancelations.
+    """
+    if result is None:
+        raise UserCancel()
+    return result
 
 
 def get_input(message):
@@ -43,5 +58,10 @@ def get_input(message):
     """
     menu = [{"type": "input", "name": "option", "message": message}]
     answers = prompt(menu)
-    option = answers.get("option")
-    return option
+    return check_cancel(answers.get("option"))
+
+
+if __name__ == "__main__":
+    print(repr(get_confirmation("Test?")))
+    print(repr(make_simple_choice(["A", "B"])))
+    print(repr(get_input("Test?")))
