@@ -56,7 +56,11 @@ def get_suggestion(word):
     search_re = re.compile("[/]url[?]q=([^&#]+)[&#]")
     page = requests.get(search).text
     soup = BeautifulSoup(page, features="lxml")
-    print(soup.prettify())
+    for div in soup.find_all(""):
+        text = div.get_text()
+        print(repr((text,div.prettify())))
+        if text.strip().startswith("Showing results for"):
+            print(div.prettify())
     urls = []
     for link in soup.find_all("a"):
         href = link.attrs.get("href")
@@ -68,7 +72,6 @@ def get_suggestion(word):
         urlq = mobj.group(1)
         url = unquote(urlq).lower()
         urls.append(url)
-        print(url)
     for url in urls:
         for dicturl in MISSPELLINGS:
             if url == f"{dicturl}{word}":
