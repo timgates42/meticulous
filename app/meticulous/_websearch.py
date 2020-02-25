@@ -13,6 +13,7 @@ class Suggestion:  # pylint: disable=too-few-public-methods
     """
     Keep details of a websearch suggestion
     """
+
     def __init__(self, is_nonword=False, is_typo=False, replacement=""):
         self.is_nonword = is_nonword
         self.is_typo = is_typo
@@ -41,6 +42,10 @@ DICTIONARIES = [
     "https://www.thesaurus.com/browse/",
     "https://www.yourdictionary.com/",
 ]
+MISSPELLINGS = [
+    "https://www.spellchecker.net/misspellings/",
+    "https://www.spellcheck.net/misspelled-words/",
+]
 
 
 def get_suggestion(word):
@@ -52,6 +57,7 @@ def get_suggestion(word):
     page = requests.get(search).text
     soup = BeautifulSoup(page, features="lxml")
     print(soup.prettify())
+    urls = []
     for link in soup.find_all("a"):
         href = link.attrs.get("href")
         if not href:
@@ -61,6 +67,13 @@ def get_suggestion(word):
             continue
         urlq = mobj.group(1)
         url = unquote(urlq).lower()
+        urls.append(url)
+        print(url)
+    for url in urls:
+        for dicturl in MISSPELLINGS:
+            if url == f"{dicturl}{word}":
+                return Suggestion(is_typo=True)
+    for url in urls:
         for dicturl in DICTIONARIES:
             if url == f"{dicturl}{word}":
                 return Suggestion(is_nonword=True)
@@ -68,4 +81,4 @@ def get_suggestion(word):
 
 
 if __name__ == "__main__":
-    print(get_suggestion("actuall"))
+    print(get_suggestion("altnernatives"))
