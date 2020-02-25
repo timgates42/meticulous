@@ -9,7 +9,10 @@ import requests
 from bs4 import BeautifulSoup
 
 
-class Suggestion:
+class Suggestion:  # pylint: disable=too-few-public-methods
+    """
+    Keep details of a websearch suggestion
+    """
     def __init__(self, is_nonword=False, is_typo=False, replacement=""):
         self.is_nonword = is_nonword
         self.is_typo = is_typo
@@ -48,6 +51,7 @@ def get_suggestion(word):
     search_re = re.compile("[/]url[?]q=([^&#]+)[&#]")
     page = requests.get(search).text
     soup = BeautifulSoup(page, features="lxml")
+    print(soup.prettify())
     for link in soup.find_all("a"):
         href = link.attrs.get("href")
         if not href:
@@ -64,4 +68,4 @@ def get_suggestion(word):
 
 
 if __name__ == "__main__":
-    print(get_suggestion("catenate"))
+    print(get_suggestion("actuall"))

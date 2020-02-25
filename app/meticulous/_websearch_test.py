@@ -8,7 +8,10 @@ from meticulous._websearch import Suggestion, get_suggestion
 
 
 @pytest.mark.parametrize(
-    "word, expected", [("catenate", Suggestion(is_nonword=True))],
+    "word, expected", [
+        ("catenate", Suggestion(is_nonword=True)),
+        ("actuall", Suggestion(is_typo=True, replacement="actually")),
+    ],
 )
 def test_suggestions(word, expected):
     """
