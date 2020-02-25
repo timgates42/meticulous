@@ -54,13 +54,14 @@ def get_suggestion(word):
     """
     search = f"https://www.google.com.au/search?q={quote(word)}"
     search_re = re.compile("[/]url[?]q=([^&#]+)[&#]")
+    results_for_re = re.compile("Showing results for ([^(]+)[(]")
     page = requests.get(search).text
     soup = BeautifulSoup(page, features="lxml")
-    for div in soup.find_all(""):
+    for div in soup.find_all("div"):
         text = div.get_text()
-        print(repr((text,div.prettify())))
-        if text.strip().startswith("Showing results for"):
-            print(div.prettify())
+        mobj = results_for_re.match(text)
+        if mobj:
+            return Suggestion(is_typo=True, replacement=mobj.group(1))
     urls = []
     for link in soup.find_all("a"):
         href = link.attrs.get("href")
