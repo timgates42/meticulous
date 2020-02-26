@@ -2,3 +2,7 @@
 - Auto pull and push for unanimous
 - Load unanimous local nonwords
 - Super highlight typo suggestions and confirm.
+- pressent -> present
+- faster submissions framework
+ - auto show readme/other file submission data
+- ignore apostrophe'd words
