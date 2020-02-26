@@ -726,6 +726,8 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
         except HaltProcessing:
             if state.done:
                 return
+    msg = "Completed checking all words!"
+    print("".join([Fore.YELLOW, msg, Style.RESET_ALL]))
 
 
 def check_websearch(obj, eng):
@@ -903,11 +905,12 @@ def task_cleanup(obj, eng):  # pylint: disable=unused-argument
     """
     Submits the typo
     """
-    repository_saves = get_json_value("repository_saves", {})
-    count = len(repository_saves)
+    key = "repository_map"
+    repository_map = get_json_value(key, {})
+    count = len(repository_map)
     if count != 1:
         print(f"Unexpected number of repostories - {count}")
         return
-    reponame, reposave = next(iter(repository_saves.items()))
+    reponame, reposave = next(iter(repository_map.items()))
     if get_confirmation(f"Remove repository {reponame}"):
         remove_repo_for(reponame, reposave, confirm=False)
