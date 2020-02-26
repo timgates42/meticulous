@@ -797,11 +797,24 @@ def show_word(word, details):  # pylint: disable=unused-argument
     for filename in files:
         print(f"{filename}:")
         with io.open(filename, "r", encoding="utf-8") as fobj:
+            show_next = False
+            prev_line = None
             for line in fobj:
                 line = line.rstrip("\r\n")
                 output = get_colourized(line, word)
                 if output:
+                    if prev_line:
+                        print("-" * 60)
+                        print(prev_line)
+                        prev_line = None
                     print(output)
+                    show_next = True
+                elif show_next:
+                    print(line)
+                    print("-" * 60)
+                    show_next = False
+                else:
+                    prev_line = line
 
 
 def get_colourized(line, word):
