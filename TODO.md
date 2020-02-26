@@ -1,0 +1,4 @@
+- Retry unanimous downloads
+- Auto pull and push for unanimous
+- Load unanimous local nonwords
+- Super highlight typo suggestions and confirm.
