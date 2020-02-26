@@ -5,3 +5,5 @@
 - faster submissions framework
  - auto show readme/other file submission data
 - ignore apostrophe in words
+- fuzzywuzzy for spelling suggestions from local dictionary
+- input does not accept highlights

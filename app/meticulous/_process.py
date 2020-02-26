@@ -12,7 +12,9 @@ import sys
 from pathlib import Path
 from urllib.parse import quote
 
+import spelling.version
 import unanimous.util
+import unanimous.version
 from colorama import Fore, Style, init
 from plumbum import FG, local
 from spelling.check import process_results, run_spell_check
@@ -78,6 +80,7 @@ def run_invocation(target):
         sys.exit(1)
     init()
     prepare()
+    validate_versions()
     try:
         if get_confirmation("Run automated process"):
             automated_process(target)
@@ -85,6 +88,25 @@ def run_invocation(target):
             manual_menu(target)
     except UserCancel:
         print("Quit by user.")
+
+
+def validate_versions():
+    """
+    Warn if libraries are old
+    """
+    versions = [
+        ("unanimous", unanimous.version.__version__, "0.6.5"),
+        ("spelling", spelling.version.__version__, "0.6.4"),
+    ]
+    for name, vertxt, minvertxt in versions:
+        vertup = tuple(int(elem) for elem in vertxt.split("."))
+        minver = tuple(int(elem) for elem in minvertxt.split("."))
+        if vertup < minver:
+            print(
+                f"{Fore.YELLOW}Warning {name} is version"
+                f" {vertxt} below minimum of {minvertxt}"
+                f"{Style.RESET_ALL}"
+            )
 
 
 def manual_menu(target):
@@ -726,8 +748,7 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
         except HaltProcessing:
             if state.done:
                 return
-    msg = "Completed checking all words!"
-    print("".join([Fore.YELLOW, msg, Style.RESET_ALL]))
+    print(f"{Fore.YELLOW}Completed checking all words!{Style.RESET_ALL}")
 
 
 def check_websearch(obj, eng):
