@@ -22,4 +22,4 @@ def test_suggestions(word, expected):
     # Exercise
     obtained = get_suggestion(word)
     # Verify
-    assert obtained == expected
+    assert obtained == expected  # noqa: S101 # nosec

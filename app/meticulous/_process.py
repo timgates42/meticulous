@@ -130,6 +130,13 @@ def remove_repo_selection(target):  # pylint: disable=unused-argument
     """
     os.chdir(target)
     repo, repodir = pick_repo()
+    remove_repo_for(repo, repodir)
+
+
+def remove_repo_for(repo, repodir, confirm=True):
+    """
+    Remove specified repo
+    """
     for name in ("repository_map", "repository_saves"):
         repository_map = get_json_value(name, {})
         try:
@@ -137,7 +144,10 @@ def remove_repo_selection(target):  # pylint: disable=unused-argument
             set_json_value(name, repository_map)
         except KeyError:
             continue
-    option = make_simple_choice(["Yes", "No"], "Delete the directory?")
+    if confirm:
+        option = make_simple_choice(["Yes", "No"], "Delete the directory?")
+    else:
+        option = "Yes"
     if option == "Yes":
         shutil.rmtree(repodir)
 
@@ -170,15 +180,18 @@ def prepare_a_pr_or_issue_for(reponame, reposave):
     """
     Access repository to prepare a change
     """
-    while True:
-        repodir = reposave["repodir"]
-        repodirpath = Path(repodir)
-        choices = get_pr_or_issue_choices(reponame, repodirpath)
-        option = make_choice(choices)
-        if option is None:
-            return
-        handler, context = option
-        handler(reponame, reposave, context)
+    try:
+        while True:
+            repodir = reposave["repodir"]
+            repodirpath = Path(repodir)
+            choices = get_pr_or_issue_choices(reponame, repodirpath)
+            option = make_choice(choices)
+            if option is None:
+                return
+            handler, context = option
+            handler(reponame, reposave, context)
+    except UserCancel:
+        print("quit - returning to main process")
 
 
 def get_pr_or_issue_choices(reponame, repodirpath):  # pylint: disable=too-many-locals
@@ -344,7 +357,7 @@ def push_commit(repodir, add_word):
     git = local["git"]
     with local.cwd(repodir):
         to_branch = git("symbolic-ref", "--short", "HEAD").strip()
-        from_branch = f"bugfix/typo_{add_word}"
+        from_branch = f"bugfix/typo_{add_word.replace(' ', '_')}"
         _ = git["commit", "-F", "__commit__.txt"] & FG
         _ = git["push", "origin", f"{to_branch}:{from_branch}"] & FG
     return from_branch, to_branch
@@ -648,7 +661,9 @@ def automated_process(target):  # pylint: disable=unused-argument
     step.
     """
     my_engine = GenericWorkflowEngine()
-    my_engine.callbacks.replace([task_add_repo, task_collect_nonwords, task_submit])
+    my_engine.callbacks.replace(
+        [task_add_repo, task_collect_nonwords, task_submit, task_cleanup]
+    )
     my_engine.process([State(target)])
 
 
@@ -882,3 +897,17 @@ def task_submit(obj, eng):  # pylint: disable=unused-argument
         return
     reponame, reposave = next(iter(repository_saves.items()))
     prepare_a_pr_or_issue_for(reponame, reposave)
+
+
+def task_cleanup(obj, eng):  # pylint: disable=unused-argument
+    """
+    Submits the typo
+    """
+    repository_saves = get_json_value("repository_saves", {})
+    count = len(repository_saves)
+    if count != 1:
+        print(f"Unexpected number of repostories - {count}")
+        return
+    reponame, reposave = next(iter(repository_saves.items()))
+    if get_confirmation(f"Remove repository {reponame}"):
+        remove_repo_for(reponame, reposave, confirm=False)
