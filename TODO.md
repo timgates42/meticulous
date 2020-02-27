@@ -1,7 +1,12 @@
-- Retry unanimous downloads
+- websearch on spellcheck and sort to show suspected typos first
+- display readme before spellcheck (without lines starting with . | = only first
+  20)
+- faster submissions framework
+  - use readme first 20 lines for other files for quick choice (maybe scan for
+    lines containing `expected`)
+- Retry unanimous downloads (1 second timeout?)
 - Auto pull and push for unanimous
 - Load unanimous local nonwords
-- faster submissions framework
  - auto show readme/other file submission data
 - fuzzywuzzy for spelling suggestions from local dictionary
 - doco automated process
