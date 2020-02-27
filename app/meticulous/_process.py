@@ -771,10 +771,8 @@ def check_websearch(obj, eng):
                 (
                     f"Web search suggests using {prefix}"
                     f"{suggestion.replacement}{suffix}, agree?"
-                ) for prefix, suffix in [
-                    ("", ""),
-                    (Fore.YELLOW, Style.RESET_ALL),
-                ]
+                )
+                for prefix, suffix in [("", ""), (Fore.YELLOW, Style.RESET_ALL)]
             ]
             print(msgs[-1])
             if get_confirmation(msgs[0], defaultval=False):
@@ -782,13 +780,8 @@ def check_websearch(obj, eng):
                 obj.done = True
                 eng.halt("found typo")
         msgs = [
-            (
-                f"Web search suggests using {prefix}"
-                f"typo{suffix}, agree?"
-            ) for prefix, suffix in [
-                ("", ""),
-                (Fore.RED, Style.RESET_ALL),
-            ]
+            (f"Web search suggests using {prefix}" f"typo{suffix}, agree?")
+            for prefix, suffix in [("", ""), (Fore.RED, Style.RESET_ALL)]
         ]
         print(msgs[-1])
         if get_confirmation(msgs[0], defaultval=False):
