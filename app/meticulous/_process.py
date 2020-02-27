@@ -42,6 +42,7 @@ from meticulous._input import (
 from meticulous._nonword import add_non_word
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
+from meticulous._summary import display_repo_intro
 from meticulous._websearch import get_suggestion
 
 
@@ -579,6 +580,7 @@ def spelling_check(repo, target):
     print(f"Running spell check on {repodir}")
     spellpath = repodir / "spelling.txt"
     print(f"Spelling output {spellpath}")
+    display_repo_intro(repodir)
     all_results = list(
         run_spell_check(
             config=None,

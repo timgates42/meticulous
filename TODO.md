@@ -1,6 +1,4 @@
 - websearch on spellcheck and sort to show suspected typos first
-- display readme before spellcheck (without lines starting with . | = only first
-  20)
 - faster submissions framework
   - use readme first 20 lines for other files for quick choice (maybe scan for
     lines containing `expected`)
