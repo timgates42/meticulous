@@ -53,13 +53,13 @@ def get_suggestion(word):
     Use the internet to determine if the provided word is a nonword or a typo
     """
     search = f"https://www.google.com.au/search?q={quote(word)}"
-    search_re = re.compile("[/]url[?]q=([^&#]+)[&#]")
-    results_for_re = re.compile("Showing results for ([^(]+)[(]")
-    page = requests.get(search).text
-    soup = BeautifulSoup(page, features="lxml")
+    soup = BeautifulSoup(requests.get(search).text, features="lxml")
     for div in soup.find_all("div"):
         text = div.get_text()
-        mobj = results_for_re.match(text)
+        mobj = re.match("Showing results for ([^(]+)[(]", text)
+        if mobj:
+            return Suggestion(is_typo=True, replacement=mobj.group(1))
+        mobj = re.match("Did you mean: (.*)$", text)
         if mobj:
             return Suggestion(is_typo=True, replacement=mobj.group(1))
     urls = []
@@ -67,12 +67,10 @@ def get_suggestion(word):
         href = link.attrs.get("href")
         if not href:
             continue
-        mobj = search_re.match(href)
+        mobj = re.match("[/]url[?]q=([^&#]+)[&#]", href)
         if not mobj:
             continue
-        urlq = mobj.group(1)
-        url = unquote(urlq).lower()
-        urls.append(url)
+        urls.append(unquote(mobj.group(1)).lower())
     for url in urls:
         for dicturl in MISSPELLINGS:
             if url == f"{dicturl}{word}":

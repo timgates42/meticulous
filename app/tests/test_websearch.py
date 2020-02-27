@@ -13,6 +13,7 @@ from meticulous._websearch import Suggestion, get_suggestion
         ("catenate", Suggestion(is_nonword=True)),
         ("actuall", Suggestion(is_typo=True)),
         ("altnernatives", Suggestion(is_typo=True, replacement="alternatives")),
+        ("pressent", Suggestion(is_typo=True, replacement="present")),
     ],
 )
 def test_suggestions(word, expected):

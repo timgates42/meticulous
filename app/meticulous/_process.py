@@ -767,18 +767,24 @@ def check_websearch(obj, eng):
             eng.halt("found nonword")
     if suggestion.is_typo:
         if suggestion.replacement:
-            msg = (
+            msgs = [
                 (
-                    f"Web search suggests using {Fore.YELLOW}"
-                    f"{suggestion.replacement}{Style.RESET_ALL}, agree?"
-                ),
-            )
-            if get_confirmation(msg, defaultval=False):
+                    f"Web search suggests using {prefix}"
+                    f"{suggestion.replacement}{suffix}, agree?"
+                )
+                for prefix, suffix in [("", ""), (Fore.YELLOW, Style.RESET_ALL)]
+            ]
+            print(msgs[-1])
+            if get_confirmation(msgs[0], defaultval=False):
                 fix_word(obj.word, obj.details, suggestion.replacement, obj.repopath)
                 obj.done = True
                 eng.halt("found typo")
-        msg = f"Web search suggests {Fore.RED}typo{Style.RESET_ALL}, agree?"
-        if get_confirmation(msg, defaultval=False):
+        msgs = [
+            (f"Web search suggests using {prefix}" f"typo{suffix}, agree?")
+            for prefix, suffix in [("", ""), (Fore.RED, Style.RESET_ALL)]
+        ]
+        print(msgs[-1])
+        if get_confirmation(msgs[0], defaultval=False):
             handle_typo(obj.word, obj.details, obj.repopath)
             obj.done = True
             eng.halt("found typo")
