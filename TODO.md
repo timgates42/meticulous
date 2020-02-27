@@ -1,9 +1,6 @@
 - Retry unanimous downloads
 - Auto pull and push for unanimous
 - Load unanimous local nonwords
-- `pressent` -> `present`
 - faster submissions framework
  - auto show readme/other file submission data
-- ignore apostrophe in words
 - fuzzywuzzy for spelling suggestions from local dictionary
-- input does not accept highlights
