@@ -942,7 +942,7 @@ def get_sorted_words(jsonobj):
     order = []
     for word, details in jsonobj.items():
         priority = 0
-        if details["suggestion"]:
+        if details.get("suggestion"):
             obj = Suggestion.load(details["suggestion"])
             details["suggestion_obj"] = obj
             priority = obj.priority
