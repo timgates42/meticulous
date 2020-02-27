@@ -43,7 +43,7 @@ from meticulous._nonword import add_non_word
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 from meticulous._summary import display_repo_intro
-from meticulous._websearch import get_suggestion
+from meticulous._websearch import Suggestion, get_suggestion
 
 
 def get_spelling_store_path(target):
@@ -617,10 +617,19 @@ def results_to_json(all_results):
         if results.words:
             for word in results.words:
                 filename = context_to_filename(results.context)
-                words.setdefault(word, []).append(
+                words.setdefault(word, {}).setdefault("files", []).append(
                     {"category": results.category, "file": filename}
                 )
-    return words
+    result = {}
+    for word, details in words.items():
+        if unanimous.util.is_nonword(word):
+            details["nonword"] = True
+            continue
+        suggestion = get_suggestion(word)
+        if suggestion is not None:
+            details["suggestion"] = suggestion.save()
+        result[word] = details
+    return result
 
 
 def context_to_filename(name):
@@ -757,9 +766,7 @@ def check_websearch(obj, eng):
     """
     Quick initial check to see if a websearch provides a suggestion.
     """
-    if unanimous.util.is_nonword(obj.word):
-        eng.halt("existing nonword")
-    suggestion = get_suggestion(obj.word)
+    suggestion = obj.details.get("suggestion_obj")
     if suggestion is None:
         return
     show_word(obj.word, obj.details)
@@ -827,7 +834,9 @@ def show_word(word, details):  # pylint: disable=unused-argument
     Display the word and its context.
     """
     print(f"Checking word {word}")
-    files = sorted(set(context_to_filename(detail["file"]) for detail in details))
+    files = sorted(
+        set(context_to_filename(detail["file"]) for detail in details["files"])
+    )
     for filename in files:
         print(f"{filename}:")
         with io.open(filename, "r", encoding="utf-8") as fobj:
@@ -903,7 +912,9 @@ def fix_word(word, details, newspell, repopath):
     Save the correction
     """
     print(f"Changing {word} to {newspell}")
-    files = sorted(set(context_to_filename(detail["file"]) for detail in details))
+    files = sorted(
+        set(context_to_filename(detail["file"]) for detail in details["files"])
+    )
     file_paths = []
     for filename in files:
         lines = []
@@ -930,8 +941,13 @@ def get_sorted_words(jsonobj):
     """
     order = []
     for word, details in jsonobj.items():
-        order.append(((len(details),), word))
-    order.sort()
+        priority = 0
+        if details["suggestion"]:
+            obj = Suggestion.load(details["suggestion"])
+            details["suggestion_obj"] = obj
+            priority = obj.priority
+        order.append(((priority, len(details["files"]),), word))
+    order.sort(reverse=True)
     return [word for _, word in order]
 
 

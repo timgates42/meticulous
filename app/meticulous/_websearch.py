@@ -9,7 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-class Suggestion:  # pylint: disable=too-few-public-methods
+class Suggestion:
     """
     Keep details of a websearch suggestion
     """
@@ -18,6 +18,11 @@ class Suggestion:  # pylint: disable=too-few-public-methods
         self.is_nonword = is_nonword
         self.is_typo = is_typo
         self.replacement = replacement
+        self.prority = (
+            3
+            if self.replacement is not None
+            else (2 if self.is_typo else (1 if self.is_nonword else 0))
+        )
 
     def __eq__(self, other):
         """
@@ -27,6 +32,27 @@ class Suggestion:  # pylint: disable=too-few-public-methods
             self.is_nonword == getattr(other, "is_nonword", None)
             and self.is_typo == getattr(other, "is_typo", None)
             and self.replacement == getattr(other, "replacement", None)
+        )
+
+    def save(self):
+        """
+        Save to json dict
+        """
+        return {
+            "is_nonword": self.is_nonword,
+            "is_typo": self.is_typo,
+            "replacement": self.replacement,
+        }
+
+    @classmethod
+    def load(cls, data):
+        """
+        Load from json dict
+        """
+        return cls(
+            is_nonword=bool(data.get("is_nonword")),
+            is_typo=bool(data.get("is_typo")),
+            replacement=data.get("replacement", ""),
         )
 
 

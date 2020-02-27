@@ -1,4 +1,3 @@
-- websearch on spellcheck and sort to show suspected typos first
 - faster submissions framework
   - use readme first 20 lines for other files for quick choice (maybe scan for
     lines containing `expected`)
