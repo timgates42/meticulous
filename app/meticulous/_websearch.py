@@ -18,7 +18,7 @@ class Suggestion:
         self.is_nonword = is_nonword
         self.is_typo = is_typo
         self.replacement = replacement
-        self.prority = (
+        self.priority = (
             3
             if self.replacement is not None
             else (2 if self.is_typo else (1 if self.is_nonword else 0))
