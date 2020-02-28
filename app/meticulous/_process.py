@@ -945,6 +945,8 @@ def get_sorted_words(jsonobj):
     """
     order = []
     for word, details in jsonobj.items():
+        if is_local_non_word(word):
+            continue
         priority = 0
         if details.get("suggestion"):
             obj = Suggestion.load(details["suggestion"])
