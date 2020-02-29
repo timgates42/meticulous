@@ -14,6 +14,7 @@ from meticulous._websearch import Suggestion, get_suggestion
         ("actuall", Suggestion(is_typo=True)),
         ("altnernatives", Suggestion(is_typo=True, replacement="alternatives")),
         ("pressent", Suggestion(is_typo=True, replacement="present")),
+        ("cssrewrite", Suggestion(is_nonword=True)),
     ],
 )
 def test_suggestions(word, expected):

@@ -84,10 +84,10 @@ def get_suggestion(word):
         text = div.get_text()
         mobj = re.match("Showing results for ([^(]+)[(]", text)
         if mobj:
-            return Suggestion(is_typo=True, replacement=mobj.group(1))
+            return check_replacement(word, mobj.group(1))
         mobj = re.match("Did you mean: (.*)$", text)
         if mobj:
-            return Suggestion(is_typo=True, replacement=mobj.group(1))
+            return check_replacement(word, mobj.group(1))
     urls = []
     for link in soup.find_all("a"):
         href = link.attrs.get("href")
@@ -106,6 +106,16 @@ def get_suggestion(word):
             if url == f"{dicturl}{word}":
                 return Suggestion(is_nonword=True)
     return None
+
+
+def check_replacement(word, replacement):
+    """
+    Check a suggested replacement and see if it is just a space insertion in
+    which case we count as a nonword.
+    """
+    if replacement.replace(" ", "") == word:
+        return Suggestion(is_nonword=True)
+    return Suggestion(is_typo=True, replacement=replacement)
 
 
 if __name__ == "__main__":

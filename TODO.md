@@ -1,7 +1,7 @@
+- Retry unanimous downloads (1 second timeout?)
 - faster submissions framework
   - use readme first 20 lines for other files for quick choice (maybe scan for
     lines containing `expected`)
-- Retry unanimous downloads (1 second timeout?)
 - Auto pull and push for unanimous
 - Load unanimous local nonwords
  - auto show readme/other file submission data

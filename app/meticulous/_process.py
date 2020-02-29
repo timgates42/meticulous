@@ -39,7 +39,7 @@ from meticulous._input import (
     make_choice,
     make_simple_choice,
 )
-from meticulous._nonword import add_non_word
+from meticulous._nonword import add_non_word, is_local_non_word, load_recent_non_words
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 from meticulous._summary import display_repo_intro
@@ -81,6 +81,7 @@ def run_invocation(target):
         sys.exit(1)
     init()
     prepare()
+    load_recent_non_words(target)
     validate_versions()
     try:
         if get_confirmation("Run automated process"):
@@ -625,6 +626,9 @@ def results_to_json(all_results):
         if unanimous.util.is_nonword(word):
             details["nonword"] = True
             continue
+        if is_local_non_word(word):
+            details["nonword"] = True
+            continue
         suggestion = get_suggestion(word)
         if suggestion is not None:
             details["suggestion"] = suggestion.save()
@@ -941,6 +945,8 @@ def get_sorted_words(jsonobj):
     """
     order = []
     for word, details in jsonobj.items():
+        if is_local_non_word(word):
+            continue
         priority = 0
         if details.get("suggestion"):
             obj = Suggestion.load(details["suggestion"])
