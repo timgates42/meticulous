@@ -1,3 +1,4 @@
+- spelling command line help and unanimous reload
 - Retry unanimous downloads (1 second timeout?)
 - faster submissions framework
   - use readme first 20 lines for other files for quick choice (maybe scan for
@@ -10,3 +11,6 @@
 - super auto process using async await to gather backlog of repos and backlog of
   questions
 - way of running auto process on manually added repo (json not exists)
+- javascript
+- cpp
+- default to just a commit not issue + pr  Issue #55
