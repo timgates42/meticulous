@@ -1,3 +1,4 @@
+- spelling command line help and unanimous reload
 - Retry unanimous downloads (1 second timeout?)
 - faster submissions framework
   - use readme first 20 lines for other files for quick choice (maybe scan for
