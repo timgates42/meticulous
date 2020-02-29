@@ -11,6 +11,7 @@ class RecentNonWord:  # pylint: disable=too-few-public-methods
     """
     Keep any nonwords found recently
     """
+
     cache = set()
 
 
