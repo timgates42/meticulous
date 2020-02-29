@@ -13,4 +13,3 @@
 - way of running auto process on manually added repo (json not exists)
 - javascript
 - cpp
-- default to just a commit not issue + pr  Issue #55
