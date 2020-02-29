@@ -63,7 +63,7 @@ what the correction is.
 
 'prepare a pr/issue' this allows you to examine the contribution guide and issue
 templates for a repository to work out if a full or short issue should be
-lodged. After an issue is lodge a commit can be submitted which will create a
+lodged. After an issue is lodged, a commit can be submitted which will create a
 pull request that automatically resolves the created issue with the fix to the
 typo.
 
