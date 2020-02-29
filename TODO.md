@@ -9,3 +9,5 @@
 - doco automated process
 - super auto process using async await to gather backlog of repos and backlog of
   questions
+- javascript
+- cpp
