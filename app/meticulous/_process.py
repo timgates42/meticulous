@@ -378,7 +378,7 @@ def push_commit(repodir, add_word):
     git = local["git"]
     with local.cwd(repodir):
         to_branch = git("symbolic-ref", "--short", "HEAD").strip()
-        from_branch = f"bugfix/typo_{add_word.replace(' ', '_')}"
+        from_branch = f"bugfix_typo_{add_word.replace(' ', '_')}"
         _ = git["commit", "-F", "__commit__.txt"] & FG
         _ = git["push", "origin", f"{to_branch}:{from_branch}"] & FG
     return from_branch, to_branch
