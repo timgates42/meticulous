@@ -244,12 +244,9 @@ def get_pr_or_issue_choices(reponame, repodirpath):  # pylint: disable=too-many-
         print(f"{reponame} {'HAS' if has_path else 'does not have'}" f" {path}")
         if has_path:
             choices[f"show {path}"] = (show_path, path)
-    repo_disables_issues = (repodirpath / no_issues).exists()
-    if repo_disables_issues:
-        choices["make a commit"] = (make_a_commit, False)
-    else:
-        choices["make a full issue"] = (make_issue, True)
-        choices["make a short issue"] = (make_issue, False)
+    choices["make a commit"] = (make_a_commit, False)
+    choices["make a full issue"] = (make_issue, True)
+    choices["make a short issue"] = (make_issue, False)
     has_issue = (repodirpath / issue).exists()
     if has_issue:
         choices["submit issue"] = (submit_issue, None)
