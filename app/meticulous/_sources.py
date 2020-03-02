@@ -12,7 +12,7 @@ import requests
 from meticulous._storage import get_value, set_value
 
 SOURCE_MARKDOWN_URLS = [
-#    "https://raw.githubusercontent.com/vinta/awesome-python/master/README.md",
+    "https://raw.githubusercontent.com/vinta/awesome-python/master/README.md",
     "https://raw.githubusercontent.com/shahraizali/awesome-django/master/README.md",
 ]
 
