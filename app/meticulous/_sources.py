@@ -12,7 +12,8 @@ import requests
 from meticulous._storage import get_value, set_value
 
 SOURCE_MARKDOWN_URLS = [
-    "https://raw.githubusercontent.com/vinta/awesome-python/master/README.md"
+    "https://raw.githubusercontent.com/vinta/awesome-python/master/README.md",
+    "https://github.com/shahraizali/awesome-django/raw/master/README.md",
 ]
 
 
@@ -62,10 +63,7 @@ def download_url(url):
     """
     Obtain the URL content
     """
-    if os.path.isfile("README.md.txt"):
-        with io.open("README.md.txt", "r", encoding="utf-8") as fobj:
-            return fobj.read()
-    return requests.get(url).text
+    return requests.get(url, timeout=120).text
 
 
 if __name__ == "__main__":
