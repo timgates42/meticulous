@@ -306,9 +306,10 @@ def make_a_commit(reponame, reposave, is_full):  # pylint: disable=unused-argume
     with io.open(commit_path, "w", encoding="utf-8") as fobj:
         print(
             f"""\
-Fix simple typo: {del_word} -> {add_word}
+docs: Fix simple typo, {del_word} -> {add_word}
 
 There is a small typo in {files}.
+
 Should read `{add_word}` rather than `{del_word}`.
 """,
             file=fobj,
@@ -322,6 +323,8 @@ def submit_issue(reponame, reposave, ctxt):  # pylint: disable=unused-argument
     repodir = Path(reposave["repodir"])
     add_word = reposave["add_word"]
     del_word = reposave["del_word"]
+    file_paths = reposave["file_paths"]
+    files = ", ".join(file_paths)
     issue_path = str(repodir / "__issue__.txt")
     title, body = load_commit_like_file(issue_path)
     issue_num = issue_via_api(reponame, title, body)
@@ -329,7 +332,9 @@ def submit_issue(reponame, reposave, ctxt):  # pylint: disable=unused-argument
     with io.open(commit_path, "w", encoding="utf-8") as fobj:
         print(
             f"""\
-Fix simple typo: {del_word} -> {add_word}
+docs: Fix simple typo, {del_word} -> {add_word}
+
+There is a small typo in {files}.
 
 Closes #{issue_num}
 """,
