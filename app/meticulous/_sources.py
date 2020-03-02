@@ -12,8 +12,8 @@ import requests
 from meticulous._storage import get_value, set_value
 
 SOURCE_MARKDOWN_URLS = [
-    "https://raw.githubusercontent.com/vinta/awesome-python/master/README.md",
-    "https://github.com/shahraizali/awesome-django/raw/master/README.md",
+#    "https://raw.githubusercontent.com/vinta/awesome-python/master/README.md",
+    "https://raw.githubusercontent.com/shahraizali/awesome-django/master/README.md",
 ]
 
 
@@ -29,7 +29,7 @@ def check_url(url):
     """
     Download and process the
     """
-    key = "github_links|{url}"
+    key = f"github_links|{url}"
     results = get_value(key)
     if results is None:
         results = "\n".join(get_all_markdown_github_links(url))
