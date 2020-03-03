@@ -98,7 +98,7 @@ def validate_versions():
     """
     versions = [
         ("unanimous", unanimous.version.__version__, "0.6.5"),
-        ("spelling", spelling.version.__version__, "0.6.4"),
+        ("spelling", spelling.version.__version__, "0.7.0"),
     ]
     for name, vertxt, minvertxt in versions:
         vertup = tuple(int(elem) for elem in vertxt.split("."))
