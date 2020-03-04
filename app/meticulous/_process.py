@@ -651,6 +651,9 @@ def context_to_filename(name):
     testname = testname.rsplit("(", 1)[0]
     if os.path.isfile(testname):
         return testname
+    testname = testname.strip()
+    if os.path.isfile(testname):
+        return testname
     raise Exception(f"Unable to get filepath for {name}")
 
 
