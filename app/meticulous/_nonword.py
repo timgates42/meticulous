@@ -81,7 +81,7 @@ def update_nonwords(target):
         _ = git["pull", "--no-edit"] & FG
     with local.cwd(str(path.parent / "app")):
         _ = pyexe["-m", "unanimous"] & FG
-    num = random.randrange(100000, 999999)  # noqa: DUO102
+    num = random.randrange(100000, 999999)  # noqa: DUO102 # nosec
     to_branch = "master"
     from_branch = f"nonwords_{num}"
     with local.cwd(str(path.parent)):
