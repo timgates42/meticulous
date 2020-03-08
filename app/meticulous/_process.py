@@ -91,8 +91,10 @@ def run_invocation(target):
     load_recent_non_words(target)
     validate_versions()
     try:
-        if get_confirmation("Run automated process"):
+        if get_confirmation("Run automated process?"):
             automated_process(target)
+            while get_confirmation("Run automated process again?"):
+                automated_process(target)
         else:
             manual_menu(target)
     except UserCancel:
@@ -981,5 +983,4 @@ def task_cleanup(obj, eng):  # pylint: disable=unused-argument
         print(f"Unexpected number of repostories - {count}")
         return
     reponame, reposave = next(iter(repository_map.items()))
-    if get_confirmation(f"Remove repository {reponame}"):
-        remove_repo_for(reponame, reposave, confirm=False)
+    remove_repo_for(reponame, reposave, confirm=False)
