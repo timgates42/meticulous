@@ -42,7 +42,8 @@ from meticulous._input import (
 from meticulous._nonword import add_non_word, is_local_non_word, load_recent_non_words
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
-from meticulous._summary import display_repo_intro
+from meticulous._summary import display_and_check_files, display_repo_intro
+from meticulous._util import get_browser, get_editor
 from meticulous._websearch import Suggestion, get_suggestion
 
 
@@ -198,6 +199,34 @@ def prepare_a_pr_or_issue(target):  # pylint: disable=unused-argument
     """
     reponame, reposave = pick_repo_save()
     prepare_a_pr_or_issue_for(reponame, reposave)
+
+
+def fast_prepare_a_pr_or_issue_for(reponame, reposave):
+    """
+    Display a suggestion if the repository looks like it wants an issue and a
+    pull request or is happy with just a pull request.
+    """
+    repopath = Path(reposave["repodir"])
+    suggest_issue = False
+    if display_and_check_files(repopath / ".github" / "ISSUE_TEMPLATE"):
+        suggest_issue = True
+    if display_and_check_files(repopath / ".github" / "pull_request_template.md"):
+        suggest_issue = True
+    if display_and_check_files(repopath / "CONTRIBUTING.md"):
+        suggest_issue = True
+    if not suggest_issue:
+        if get_confirmation("Analysis suggests plain pr, agree?"):
+            plain_pr_for(reponame, reposave)
+            return
+    prepare_a_pr_or_issue_for(reponame, reposave)
+
+
+def plain_pr_for(reponame, reposave):
+    """
+    Create and submit the standard PR.
+    """
+    make_a_commit(reponame, reposave, False)
+    submit_commit(reponame, reposave, None)
 
 
 def prepare_a_pr_or_issue_for(reponame, reposave):
@@ -667,36 +696,6 @@ def test(target):  # pylint: disable=unused-argument
     print(get_true_orgrepo(orgrepo))
 
 
-def get_editor():
-    """
-    Allow specifying a different editor via the common environment variable
-    EDITOR or METICULOUS_EDITOR
-    """
-    return get_app("EDITOR", "vim")
-
-
-def get_browser():
-    """
-    Allow specifying a different browser via the common environment variable
-    BROWSER OR METICULOUS_BROWSER
-    """
-    return get_app("BROWSER", "links")
-
-
-def get_app(envname, defltval):
-    """
-    Allow specifying a different command via its common environment variable
-    """
-    app_cmd = os.environ.get(f"METICULOUS_{envname}", os.environ.get(envname, defltval))
-    app_path = shutil.which(app_cmd)
-    if app_path is None:
-        raise Exception(
-            f"{envname} not found, refer to instructions at"
-            f" https://meticulous.readthedocs.io/en/latest/"
-        )
-    return app_path
-
-
 def automated_process(target):  # pylint: disable=unused-argument
     """
     Work out the current point in the automated workflow and process the next
@@ -972,7 +971,7 @@ def task_submit(obj, eng):  # pylint: disable=unused-argument
         print(f"Unexpected number of repostories - {count}")
         return
     reponame, reposave = next(iter(repository_saves.items()))
-    prepare_a_pr_or_issue_for(reponame, reposave)
+    fast_prepare_a_pr_or_issue_for(reponame, reposave)
 
 
 def task_cleanup(obj, eng):  # pylint: disable=unused-argument
