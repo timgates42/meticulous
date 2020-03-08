@@ -25,8 +25,8 @@ from workflow.errors import HaltProcessing
 from meticulous._github import (
     check_forked,
     checkout,
+    create_pr,
     fork,
-    get_api,
     get_parent_repo,
     get_true_orgrepo,
     is_archived,
@@ -39,7 +39,13 @@ from meticulous._input import (
     make_choice,
     make_simple_choice,
 )
-from meticulous._nonword import add_non_word, is_local_non_word, load_recent_non_words
+from meticulous._nonword import (
+    add_non_word,
+    check_nonwords,
+    is_local_non_word,
+    load_recent_non_words,
+    update_nonwords,
+)
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 from meticulous._summary import display_and_check_files, display_repo_intro
@@ -402,7 +408,8 @@ def submit_commit(reponame, reposave, ctxt):  # pylint: disable=unused-argument
     commit_path = str(repodir / "__commit__.txt")
     title, body = load_commit_like_file(commit_path)
     from_branch, to_branch = push_commit(repodir, add_word)
-    create_pr(reponame, title, body, from_branch, to_branch)
+    pullreq = create_pr(reponame, title, body, from_branch, to_branch)
+    print(f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}")
 
 
 def push_commit(repodir, add_word):
@@ -416,20 +423,6 @@ def push_commit(repodir, add_word):
         _ = git["commit", "-F", "__commit__.txt"] & FG
         _ = git["push", "origin", f"{to_branch}:{from_branch}"] & FG
     return from_branch, to_branch
-
-
-def create_pr(reponame, title, body, from_branch, to_branch):
-    """
-    Use API to create a pull request
-    """
-    api = get_api()
-    repo = get_parent_repo(reponame)
-    user_org = api.get_user().login
-    repo = get_parent_repo(reponame)
-    pullreq = repo.create_pull(
-        title=title, body=body, base=to_branch, head=f"{user_org}:{from_branch}"
-    )
-    print(f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}")
 
 
 def show_path(reponame, reposave, path):  # pylint: disable=unused-argument
@@ -900,6 +893,9 @@ def handle_nonword(word, target):  # pylint: disable=unused-argument
     Handle a nonword
     """
     add_non_word(word, target)
+    if check_nonwords(target):
+        pullreq = update_nonwords(target)
+        print(f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}")
 
 
 def handle_typo(word, details, repopath):  # pylint: disable=unused-argument
