@@ -12,6 +12,7 @@ class PoolManager:
     Used to add tasks that must be json serializable to pass to threads for
     execution or if requiring input saved to the user input priority heap.
     """
+
     def __init__(self, handlers, max_workers):
         self._handlers = handlers
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
@@ -43,7 +44,7 @@ class PoolManager:
         """
         Lookup the handlers to return a task
         """
-        factory = self._handlers[taskjson['name']]
+        factory = self._handlers[taskjson["name"]]
         return factory(taskjson)
 
     def stop(self):
