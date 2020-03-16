@@ -4,33 +4,57 @@ Multithread processing to maximize time value of user input
 
 import concurrent.futures
 
-from meticulous._input import get_confirmation
 
-
-class WorkerContext(object):  # pylint: disable=too-few-public-methods
+class PoolManager:
     """
-    Used to record multithread state
+    Used to add tasks that must be json serializable to pass to threads for
+    execution or if requiring input saved to the user input priority heap.
     """
+    def __init__(self, handlers, max_workers):
+        self.handlers = handlers
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
 
-    def __init__(self):
-        self.stopped = False
-        self.count = 0
+    def add(self, taskjson):
+        """
+        add a task to the executor
+        """
+        self.executor.submit(self.run_task, taskjson=taskjson)
+
+    def run_task(self, taskjson):
+        """
+        Called by a thread in the pool to run the task
+        """
+        handler = self.load_handler(taskjson)
+        handler()
+
+    def load_handler(self, taskjson):
+        """
+        Lookup the handlers to return a task
+        """
+        factory = self.handlers[taskjson['name']]
+        return factory(taskjson)
 
     def stop(self):
         """
-        Called to cancel execution and save remaining tasks
+        Wait for current tasks to complete
         """
-        self.stopped = True
+        self.executor.shutdown()
+
+    def __enter__(self):
+        """
+        Implement python with interface
+        """
+        return self
+
+    def __exit__(self, type, value, traceback):  # pylint: disable=redefined-builtin
+        """
+        Implement python with interface
+        """
+        self.stop()
 
 
-def main(start_tasks, workers=5):
+def get_pool(handlers, max_workers=5):
     """
-    Start multithread worker processing of tasks
+    Obtain a threadpool
     """
-    context = WorkerContext()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-        future_iter = start_tasks(executor, context)
-        for future in concurrent.futures.as_completed(future_iter):
-            ask_continue = future.get_result()
-            if ask_continue and not get_confirmation("Continue?"):
-                context.stop()
+    return PoolManager(handlers, max_workers)
