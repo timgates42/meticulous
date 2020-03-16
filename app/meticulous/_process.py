@@ -9,6 +9,7 @@ import os
 import re
 import shutil
 import sys
+import time
 from pathlib import Path
 from urllib.parse import quote
 
@@ -49,6 +50,7 @@ from meticulous._nonword import (
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 from meticulous._summary import display_and_check_files, display_repo_intro
+from meticulous._threadpool import main as threadpool_main
 from meticulous._util import get_browser, get_editor
 from meticulous._websearch import Suggestion, get_suggestion
 
@@ -128,6 +130,7 @@ def manual_menu(target):
         try:
             lookup = {
                 "automated process": automated_process,
+                "automated work queue": automated_work_queue,
                 "examine a repository": examine_repo_selection,
                 "manually add a new repository": manually_add_new_repo,
                 "remove a repository": remove_repo_selection,
@@ -703,6 +706,31 @@ def automated_process(target):  # pylint: disable=unused-argument
     my_engine.process([State(target)])
 
 
+def gather_repo(context):
+    """
+    Add a repository to the available set
+    """
+    context.count += 1
+    return True
+
+
+def start_tasks(executor, context):
+    """
+    Adds tasks to the multithreaded worker
+    """
+    while not context.stopped:
+        if context.count < 10:
+            yield executor.submit(gather_repo, context)
+        time.sleep(0.1)
+
+
+def automated_work_queue(target):  # pylint: disable=unused-argument
+    """
+    Run the multi task work queue
+    """
+    threadpool_main(start_tasks)
+
+
 class State:  # pylint: disable=too-few-public-methods
     """
     Store the workflow state.
@@ -954,7 +982,7 @@ def get_sorted_words(jsonobj):
             obj = Suggestion.load(details["suggestion"])
             details["suggestion_obj"] = obj
             priority = obj.priority
-        order.append(((priority, len(details["files"]),), word))
+        order.append(((priority, len(details["files"])), word))
     order.sort(reverse=True)
     return [word for _, word in order]
 
