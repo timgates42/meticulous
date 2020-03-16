@@ -2,9 +2,8 @@
 Multithread processing to maximize time value of user input
 """
 
-import traceback
-
 import concurrent.futures
+import logging
 
 
 class PoolManager:
@@ -37,8 +36,8 @@ class PoolManager:
                 return
             handler = self.load_handler(taskjson)
             handler()
-        except:
-            traceback.print_exc()
+        except Exception:  # pylint: disable=broad-except
+            logging.exception("Unhandled error")
 
     def load_handler(self, taskjson):
         """
