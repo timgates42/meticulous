@@ -2,6 +2,8 @@
 Multithread processing to maximize time value of user input
 """
 
+import traceback
+
 import concurrent.futures
 
 
@@ -11,34 +13,44 @@ class PoolManager:
     execution or if requiring input saved to the user input priority heap.
     """
     def __init__(self, handlers, max_workers):
-        self.handlers = handlers
-        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
+        self._handlers = handlers
+        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
+        self._draining = False
+        self._saved = []
 
     def add(self, taskjson):
         """
         add a task to the executor
         """
-        self.executor.submit(self.run_task, taskjson=taskjson)
+        if self._draining:
+            raise Exception("No new tasks when draining.")
+        self._executor.submit(self.run_task, taskjson=taskjson)
 
     def run_task(self, taskjson):
         """
         Called by a thread in the pool to run the task
         """
-        handler = self.load_handler(taskjson)
-        handler()
+        try:
+            if self._draining:
+                self._saved.append(taskjson)
+                return
+            handler = self.load_handler(taskjson)
+            handler()
+        except:
+            traceback.print_exc()
 
     def load_handler(self, taskjson):
         """
         Lookup the handlers to return a task
         """
-        factory = self.handlers[taskjson['name']]
+        factory = self._handlers[taskjson['name']]
         return factory(taskjson)
 
     def stop(self):
         """
         Wait for current tasks to complete
         """
-        self.executor.shutdown()
+        self._executor.shutdown()
 
     def __enter__(self):
         """
@@ -51,6 +63,20 @@ class PoolManager:
         Implement python with interface
         """
         self.stop()
+
+    def drain(self):
+        """
+        Signal to stop executing new tasks
+        """
+        self._draining = True
+
+    def save(self):
+        """
+        Shutdown and collect and saved results
+        """
+        self.drain()
+        self.stop()
+        return self._saved
 
 
 def get_pool(handlers, max_workers=5):
