@@ -49,6 +49,7 @@ from meticulous._nonword import (
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 from meticulous._summary import display_and_check_files, display_repo_intro
+from meticulous._threadpool import main as threadpool_main
 from meticulous._util import get_browser, get_editor
 from meticulous._websearch import Suggestion, get_suggestion
 
@@ -128,6 +129,7 @@ def manual_menu(target):
         try:
             lookup = {
                 "automated process": automated_process,
+                "automated work queue": automated_work_queue,
                 "examine a repository": examine_repo_selection,
                 "manually add a new repository": manually_add_new_repo,
                 "remove a repository": remove_repo_selection,
@@ -136,8 +138,6 @@ def manual_menu(target):
                 "prepare a pr/issue": prepare_a_pr_or_issue,
                 "show statistics": show_statistics,
             }
-            if not lookup:
-                lookup["test"] = test
             handler = make_choice(lookup)
             if handler is None:
                 print("Goodbye.")
@@ -681,16 +681,6 @@ def context_to_filename(name):
     raise Exception(f"Unable to get filepath for {name}")
 
 
-def test(target):  # pylint: disable=unused-argument
-    """
-    Prompt for a organization and repository to test
-    """
-    orgrepo = get_input("What organization/repository name?")
-    if orgrepo is None:
-        return
-    print(get_true_orgrepo(orgrepo))
-
-
 def automated_process(target):  # pylint: disable=unused-argument
     """
     Work out the current point in the automated workflow and process the next
@@ -701,6 +691,13 @@ def automated_process(target):  # pylint: disable=unused-argument
         [task_add_repo, task_collect_nonwords, task_submit, task_cleanup]
     )
     my_engine.process([State(target)])
+
+
+def automated_work_queue(target):  # pylint: disable=unused-argument
+    """
+    Run the multi task work queue
+    """
+    threadpool_main({})
 
 
 class State:  # pylint: disable=too-few-public-methods
@@ -954,7 +951,7 @@ def get_sorted_words(jsonobj):
             obj = Suggestion.load(details["suggestion"])
             details["suggestion_obj"] = obj
             priority = obj.priority
-        order.append(((priority, len(details["files"]),), word))
+        order.append(((priority, len(details["files"])), word))
     order.sort(reverse=True)
     return [word for _, word in order]
 
