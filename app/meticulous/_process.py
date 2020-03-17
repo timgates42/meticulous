@@ -9,7 +9,6 @@ import os
 import re
 import shutil
 import sys
-import time
 from pathlib import Path
 from urllib.parse import quote
 
@@ -139,8 +138,6 @@ def manual_menu(target):
                 "prepare a pr/issue": prepare_a_pr_or_issue,
                 "show statistics": show_statistics,
             }
-            if not lookup:
-                lookup["test"] = test
             handler = make_choice(lookup)
             if handler is None:
                 print("Goodbye.")
@@ -684,16 +681,6 @@ def context_to_filename(name):
     raise Exception(f"Unable to get filepath for {name}")
 
 
-def test(target):  # pylint: disable=unused-argument
-    """
-    Prompt for a organization and repository to test
-    """
-    orgrepo = get_input("What organization/repository name?")
-    if orgrepo is None:
-        return
-    print(get_true_orgrepo(orgrepo))
-
-
 def automated_process(target):  # pylint: disable=unused-argument
     """
     Work out the current point in the automated workflow and process the next
@@ -706,29 +693,11 @@ def automated_process(target):  # pylint: disable=unused-argument
     my_engine.process([State(target)])
 
 
-def gather_repo(context):
-    """
-    Add a repository to the available set
-    """
-    context.count += 1
-    return True
-
-
-def start_tasks(executor, context):
-    """
-    Adds tasks to the multithreaded worker
-    """
-    while not context.stopped:
-        if context.count < 10:
-            yield executor.submit(gather_repo, context)
-        time.sleep(0.1)
-
-
 def automated_work_queue(target):  # pylint: disable=unused-argument
     """
     Run the multi task work queue
     """
-    threadpool_main(start_tasks)
+    threadpool_main({})
 
 
 class State:  # pylint: disable=too-few-public-methods

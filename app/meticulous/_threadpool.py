@@ -84,3 +84,11 @@ def get_pool(handlers, max_workers=5):
     Obtain a threadpool
     """
     return PoolManager(handlers, max_workers)
+
+
+def main(handlers):
+    """
+    Main entry point to run pool manager
+    """
+    with get_pool(handlers) as pool:
+        return pool.save()
