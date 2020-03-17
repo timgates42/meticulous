@@ -9,6 +9,7 @@ class InputQueue:
     """
     Manage user input queue
     """
+
     def __init__(self):
         self.queue = []
 
