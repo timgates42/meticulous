@@ -27,7 +27,7 @@ def test_add_async():
     pool.add({"name": "run"})
     # Verify
     pool.stop()
-    assert result[0]
+    assert result[0]  # noqa=S101 # nosec
 
 
 def test_shutdown():
@@ -61,4 +61,4 @@ def test_shutdown():
     # Exercise
     result = pool.save()
     # Verify
-    assert result == ([taskjson] * 8)
+    assert result == ([taskjson] * 8)  # noqa=S101 # nosec
