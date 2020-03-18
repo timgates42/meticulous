@@ -26,6 +26,16 @@ class InputQueue:
         _, taskjson = heapq.heappop(self.queue)
         return taskjson
 
+    def save(self):
+        """
+        Get json serialization of queue
+        """
+        result = []
+        while self.queue:
+            priority, taskjson = heapq.heappop(self.queue)
+            result.append({"priority": priority, "task": taskjson})
+        return result
+
 
 def get_input_queue():
     """

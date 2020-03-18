@@ -17,3 +17,20 @@ def test_priority():
     task = manager.pop()
     # Verify
     assert task["name"] == "now"  # noqa=S101 # nosec
+
+
+def test_save():
+    """
+    Ensure tasks are pulled off for suspension
+    """
+    # Setup
+    manager = get_input_queue()
+    manager.add(10, {"name": "later"})
+    manager.add(1, {"name": "now"})
+    # Exercise
+    tasks = manager.save()
+    # Verify
+    assert tasks == [  # noqa=S101 # nosec
+        {"priority": 1, "task": {"name": "now"}},
+        {"priority": 10, "task": {"name": "later"}},
+    ]
