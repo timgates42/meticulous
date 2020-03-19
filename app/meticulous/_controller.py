@@ -21,3 +21,16 @@ class Controller:
             self._input_queue.add(task)
         else:
             self._threadpool.add(task)
+
+    def __enter__(self):
+        """
+        Implement python with interface
+        """
+        self._threadpool.__enter__()
+        return self
+
+    def __exit__(self, type, value, traceback):  # pylint: disable=redefined-builtin
+        """
+        Implement python with interface
+        """
+        self._threadpool.__exit__(type, value, traceback)
