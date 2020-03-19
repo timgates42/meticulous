@@ -13,10 +13,11 @@ class InputQueue:
     def __init__(self):
         self.queue = []
 
-    def add(self, priority, taskjson):
+    def add(self, taskjson):
         """
         Add a user input request
         """
+        priority = taskjson["priority"]
         heapq.heappush(self.queue, (priority, taskjson))
 
     def pop(self):
@@ -32,8 +33,8 @@ class InputQueue:
         """
         result = []
         while self.queue:
-            priority, taskjson = heapq.heappop(self.queue)
-            result.append({"priority": priority, "task": taskjson})
+            _, taskjson = heapq.heappop(self.queue)
+            result.append(taskjson)
         return result
 
 
