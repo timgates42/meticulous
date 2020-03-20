@@ -39,6 +39,7 @@ from meticulous._input import (
     make_choice,
     make_simple_choice,
 )
+from meticulous._multiworker import main as multiworker_main
 from meticulous._nonword import (
     add_non_word,
     check_nonwords,
@@ -49,7 +50,6 @@ from meticulous._nonword import (
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, prepare, set_json_value
 from meticulous._summary import display_and_check_files, display_repo_intro
-from meticulous._threadpool import main as threadpool_main
 from meticulous._util import get_browser, get_editor
 from meticulous._websearch import Suggestion, get_suggestion
 
@@ -697,7 +697,7 @@ def automated_work_queue(target):  # pylint: disable=unused-argument
     """
     Run the multi task work queue
     """
-    threadpool_main({})
+    multiworker_main()
 
 
 class State:  # pylint: disable=too-few-public-methods
