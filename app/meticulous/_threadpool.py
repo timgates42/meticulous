@@ -20,6 +20,7 @@ class PoolManager:
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
         self._draining = False
         self._saved = []
+        self._futures = []
 
     def add(self, taskjson):
         """
@@ -27,7 +28,8 @@ class PoolManager:
         """
         if self._draining:
             raise Exception("No new tasks when draining.")
-        self._executor.submit(self.run_task, taskjson=taskjson)
+        future = self._executor.submit(self.run_task, taskjson=taskjson)
+        self._futures.append(future)
 
     def run_task(self, taskjson):
         """
@@ -80,6 +82,12 @@ class PoolManager:
         self.drain()
         self.stop()
         return self._saved
+
+    def empty(self):
+        """
+        Check if threadpool executor has nothing to do
+        """
+        return all(future.done() for future in self._futures)
 
 
 def get_pool(handlers, max_workers=5):

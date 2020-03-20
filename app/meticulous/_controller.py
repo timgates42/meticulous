@@ -3,6 +3,7 @@ Manager user input and background tasks
 """
 
 import collections
+import threading
 
 Context = collections.namedtuple("Context", ["controller", "taskjson"])
 
@@ -17,6 +18,7 @@ class Controller:
         self._input_queue = input_queue
         self._threadpool = threadpool
         self._running = True
+        self.condition = threading.Condition()
 
     def add(self, task):
         """
@@ -27,6 +29,20 @@ class Controller:
             self._input_queue.add(task)
         else:
             self._threadpool.add(task)
+        with self.condition:
+            self.condition.notify()
+
+    def peek_input(self):
+        """
+        Examine top input item without removal
+        """
+        return self._input_queue.peek()
+
+    def tasks_empty(self):
+        """
+        Check if the threadpool is done
+        """
+        return self._threadpool.empty()
 
     def save(self):
         """

@@ -37,6 +37,13 @@ class InputQueue:
             result.append(taskjson)
         return result
 
+    def peek(self):
+        """
+        Get most important task without removal
+        """
+        _, taskjson = self.queue[0]
+        return taskjson
+
 
 def get_input_queue():
     """

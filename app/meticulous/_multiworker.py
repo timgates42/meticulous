@@ -17,8 +17,8 @@ def update_workload(workload):
     load_count = count_names(workload, {"repository_load"})
     for _ in range(3 - load_count):
         result.append({"interactive": False, "name": "repository_load"})
-    if count_names(workload, {"prompt_quit"}) < 1:
-        result.append({"interactive": True, "name": "prompt_quit", "priority": 999})
+    if count_names(workload, {"wait_threadpool"}) < 1:
+        result.append({"interactive": True, "name": "wait_threadpool", "priority": 999})
     if count_names(workload, {"force_quit"}) < 1:
         result.append({"interactive": True, "name": "force_quit", "priority": 1000})
     return result
@@ -42,6 +42,7 @@ def get_handlers():
     return {
         "repository_load": repository_load,
         "prompt_quit": prompt_quit,
+        "wait_threadpool": wait_threadpool,
         "force_quit": force_quit,
     }
 
@@ -53,6 +54,35 @@ def repository_load(_):
 
     def handler():
         pass
+
+    return handler
+
+
+def wait_threadpool(context):
+    """
+    Wait until all an input task is added to the queue or all tasks have
+    completed processing.
+    """
+
+    def handler():
+        with context.controller.condition:
+            while True:
+                tasks_empty = context.controller.tasks_empty()
+                top = context.controller.peek_input()
+                if top["priority"] < 999:
+                    context.controller.add(
+                        {
+                            "interactive": True,
+                            "name": "wait_threadpool",
+                            "priority": 999,
+                        }
+                    )
+                    return
+                if tasks_empty:
+                    print("All tasks complete and no new input - quiting.")
+                    context.controller.quit()
+                    return
+                context.controller.condition.wait(60)
 
     return handler
 
