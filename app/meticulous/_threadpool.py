@@ -2,8 +2,11 @@
 Multithread processing to maximize time value of user input
 """
 
+import collections
 import concurrent.futures
 import logging
+
+Context = collections.namedtuple("Context", ["taskjson"])
 
 
 class PoolManager:
@@ -44,7 +47,7 @@ class PoolManager:
         Lookup the handlers to return a task
         """
         factory = self._handlers[taskjson["name"]]
-        return factory(taskjson)
+        return factory(Context(taskjson=taskjson))
 
     def stop(self):
         """
