@@ -3,9 +3,12 @@ Test cases to ensure tasks are picked up and executed concurrently whilst
 serializing user input
 """
 
+import collections
 import threading
 
 from meticulous._threadpool import get_pool
+
+FakeController = collections.namedtuple("FakeController", ["handlers"])
 
 
 def test_add_async():
@@ -22,7 +25,7 @@ def test_add_async():
     def load_run(_):
         return run
 
-    pool = get_pool({"run": load_run})
+    pool = get_pool(FakeController({"run": load_run}))
     # Exercise
     pool.add({"name": "run"})
     # Verify
@@ -46,7 +49,7 @@ def test_shutdown():
     def load_run(_):
         return run
 
-    pool = get_pool({"run": load_run}, max_workers=2)
+    pool = get_pool(FakeController({"run": load_run}), max_workers=2)
     taskjson = {"name": "run"}
     for _ in range(10):
         pool.add(taskjson)

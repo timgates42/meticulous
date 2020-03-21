@@ -4,6 +4,7 @@ Manager user input and background tasks
 
 import collections
 import threading
+import uuid
 
 Context = collections.namedtuple("Context", ["controller", "taskjson"])
 
@@ -14,11 +15,13 @@ class Controller:
     """
 
     def __init__(self, handlers, input_queue, threadpool):
-        self._handlers = handlers
+        self.handlers = handlers
         self._input_queue = input_queue
         self._threadpool = threadpool
+        self._callbacks = {}
         self._running = True
         self.condition = threading.Condition()
+        self._callback_condition = threading.Condition()
 
     def add(self, task):
         """
@@ -82,7 +85,7 @@ class Controller:
         Process one input task
         """
         task = self._input_queue.pop()
-        factory = self._handlers[task["name"]]
+        factory = self.handlers[task["name"]]
         context = Context(controller=self, taskjson=task)
         handler = factory(context)
         return handler()
@@ -92,3 +95,24 @@ class Controller:
         prevent further processing
         """
         self._running = False
+
+    def wait_on_interactive(self, task):
+        """
+        If we have a background task that needs a section of interaction, for
+        instance to get the ssh key in the ssh-agent, we can keep this thread
+        waiting on a callback from the interactive task.
+        """
+        uuidval = str(uuid.uuid4())
+        task["uuid"] = uuidval
+        with self._callback_condition:
+            self.add(task)
+            while uuidval not in self._callbacks:
+                self._callback_condition.wait(5)
+
+    def notify_callback(self, uuidval):
+        """
+        Wake up listeners
+        """
+        with self._callback_condition:
+            self._callbacks[uuidval] = True
+            self._callback_condition.notify()

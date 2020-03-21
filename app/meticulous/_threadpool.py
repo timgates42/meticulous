@@ -6,7 +6,7 @@ import collections
 import concurrent.futures
 import logging
 
-Context = collections.namedtuple("Context", ["taskjson"])
+Context = collections.namedtuple("Context", ["controller", "taskjson"])
 
 
 class PoolManager:
@@ -15,8 +15,9 @@ class PoolManager:
     execution or if requiring input saved to the user input priority heap.
     """
 
-    def __init__(self, handlers, max_workers):
-        self._handlers = handlers
+    def __init__(self, controller, max_workers):
+        self._controller = controller
+        self._handlers = controller.handlers
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
         self._draining = False
         self._saved = []
@@ -49,7 +50,7 @@ class PoolManager:
         Lookup the handlers to return a task
         """
         factory = self._handlers[taskjson["name"]]
-        return factory(Context(taskjson=taskjson))
+        return factory(Context(controller=self._controller, taskjson=taskjson))
 
     def stop(self):
         """
@@ -90,16 +91,8 @@ class PoolManager:
         return all(future.done() for future in self._futures)
 
 
-def get_pool(handlers, max_workers=5):
+def get_pool(controller, max_workers=5):
     """
     Obtain a threadpool
     """
-    return PoolManager(handlers, max_workers)
-
-
-def main(handlers):
-    """
-    Main entry point to run pool manager
-    """
-    with get_pool(handlers) as pool:
-        return pool.save()
+    return PoolManager(controller, max_workers)
