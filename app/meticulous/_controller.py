@@ -28,7 +28,7 @@ class Controller:
         if interactive:
             self._input_queue.add(task)
         else:
-            self._threadpool.add(task)
+            self._threadpool.add(task, self)
         with self.condition:
             self.condition.notify()
 

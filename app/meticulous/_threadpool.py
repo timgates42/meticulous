@@ -6,7 +6,7 @@ import collections
 import concurrent.futures
 import logging
 
-Context = collections.namedtuple("Context", ["taskjson"])
+Context = collections.namedtuple("Context", ["taskjson", "controller"])
 
 
 class PoolManager:
@@ -22,16 +22,18 @@ class PoolManager:
         self._saved = []
         self._futures = []
 
-    def add(self, taskjson):
+    def add(self, taskjson, controller):
         """
         add a task to the executor
         """
         if self._draining:
             raise Exception("No new tasks when draining.")
-        future = self._executor.submit(self.run_task, taskjson=taskjson)
+        future = self._executor.submit(
+            self.run_task, taskjson=taskjson, controller=controller
+        )
         self._futures.append(future)
 
-    def run_task(self, taskjson):
+    def run_task(self, taskjson, controller):
         """
         Called by a thread in the pool to run the task
         """
@@ -39,17 +41,17 @@ class PoolManager:
             if self._draining:
                 self._saved.append(taskjson)
                 return
-            handler = self.load_handler(taskjson)
+            handler = self.load_handler(taskjson, controller)
             handler()
         except Exception:  # pylint: disable=broad-except
             logging.exception("Unhandled error")
 
-    def load_handler(self, taskjson):
+    def load_handler(self, taskjson, controller):
         """
         Lookup the handlers to return a task
         """
         factory = self._handlers[taskjson["name"]]
-        return factory(Context(taskjson=taskjson))
+        return factory(Context(taskjson=taskjson, controller=controller))
 
     def stop(self):
         """
