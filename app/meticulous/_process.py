@@ -567,12 +567,6 @@ def add_one_new_repo(target):
     Locate a new repository and add it to the available set.
     """
     repository_forked = get_json_value("repository_forked", {})
-    # if True:  # pylint: disable=using-constant-test
-    #    orgrepo = "thornomad/django-hitcount"
-    #    _, repo = orgrepo.split("/", 1)
-    #    checkout(repo, target)
-    #    spelling_check(repo, target)
-    #    return repo
     for orgrepo in obtain_sources():
         _, origrepo = orgrepo.split("/", 1)
         if origrepo in repository_forked:
