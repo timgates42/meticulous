@@ -8,7 +8,7 @@ import json
 import os
 import re
 import shutil
-import subprocess  # noqa=S404,B404
+import subprocess  # noqa=S404 # nosec
 import sys
 from pathlib import Path
 from urllib.parse import quote
