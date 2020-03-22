@@ -8,7 +8,7 @@ import json
 import os
 import re
 import shutil
-import subprocess  # noqa=S404
+import subprocess  # noqa=S404,B404
 import sys
 from pathlib import Path
 from urllib.parse import quote
@@ -109,7 +109,7 @@ def validate_versions():
     """
     versions = [
         ("unanimous", unanimous.version.__version__, "0.6.5"),
-        ("spelling", spelling.version.__version__, "0.8.0"),
+        ("spelling", spelling.version.__version__, "0.8.1"),
     ]
     for name, vertxt, minvertxt in versions:
         vertup = tuple(int(elem) for elem in vertxt.split("."))
@@ -567,6 +567,12 @@ def add_one_new_repo(target):
     Locate a new repository and add it to the available set.
     """
     repository_forked = get_json_value("repository_forked", {})
+    # if True:  # pylint: disable=using-constant-test
+    #    orgrepo = "thornomad/django-hitcount"
+    #    _, repo = orgrepo.split("/", 1)
+    #    checkout(repo, target)
+    #    spelling_check(repo, target)
+    #    return repo
     for orgrepo in obtain_sources():
         _, origrepo = orgrepo.split("/", 1)
         if origrepo in repository_forked:
@@ -617,6 +623,8 @@ def spelling_check(repo, target):
             "spelling",
             "--no-display-context",
             "--no-display-summary",
+            "--working-path",
+            str(repodir),
             "--json-path",
             str(jsonpath),
         ],
