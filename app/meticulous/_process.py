@@ -8,6 +8,7 @@ import json
 import os
 import re
 import shutil
+import subprocess  # noqa=S404 # nosec
 import sys
 from pathlib import Path
 from urllib.parse import quote
@@ -17,7 +18,7 @@ import unanimous.util
 import unanimous.version
 from colorama import Fore, Style, init
 from plumbum import FG, local
-from spelling.check import process_results, run_spell_check
+from spelling.check import context_to_filename
 from spelling.store import get_store
 from workflow.engine import GenericWorkflowEngine
 from workflow.errors import HaltProcessing
@@ -108,7 +109,7 @@ def validate_versions():
     """
     versions = [
         ("unanimous", unanimous.version.__version__, "0.6.5"),
-        ("spelling", spelling.version.__version__, "0.7.0"),
+        ("spelling", spelling.version.__version__, "0.8.1"),
     ]
     for name, vertxt, minvertxt in versions:
         vertup = tuple(int(elem) for elem in vertxt.split("."))
@@ -608,22 +609,29 @@ def spelling_check(repo, target):
     spellpath = repodir / "spelling.txt"
     print(f"Spelling output {spellpath}")
     display_repo_intro(repodir)
-    all_results = list(
-        run_spell_check(
-            config=None,
-            storage_path=get_spelling_store_path(target),
-            workingpath=repodir,
-        )
-    )
-    with io.open(spellpath, "w", encoding="utf-8") as fobj:
-        success = True
-        for line in process_results(all_results, True, True):
-            print(line, file=fobj)
-            success = False
-        if success:
-            print("Spelling check passed :)", file=fobj)
-    jsonobj = results_to_json(all_results)
     jsonpath = repodir / "spelling.json"
+    procobj = subprocess.Popen(  # noqa=S603 # nosec
+        [
+            sys.executable,
+            "-m",
+            "spelling",
+            "--no-display-context",
+            "--no-display-summary",
+            "--working-path",
+            str(repodir),
+            "--json-path",
+            str(jsonpath),
+        ],
+        stdout=subprocess.PIPE,
+        stdin=None,
+        stderr=subprocess.PIPE,
+    )
+    stdout, stderr = procobj.communicate()
+    if procobj.returncode not in (0, 1):
+        raise Exception(f"Error checking spelling:\n{stderr}\n{stdout}")
+    with io.open(jsonpath, "r", encoding="utf-8") as fobj:
+        jsonobj = json.load(fobj)
+    jsonobj = update_json_results(jsonobj)
     with io.open(jsonpath, "w", encoding="utf-8") as fobj:
         json.dump(jsonobj, fobj)
     repository_map = get_json_value("repository_map", {})
@@ -635,18 +643,10 @@ def spelling_check(repo, target):
             print("No Issues.", file=fobj)
 
 
-def results_to_json(all_results):
+def update_json_results(words):
     """
-    Save the result format in a machine processable format.
+    Add suggestions for words
     """
-    words = {}
-    for results in all_results:
-        if results.words:
-            for word in results.words:
-                filename = context_to_filename(results.context)
-                words.setdefault(word, {}).setdefault("files", []).append(
-                    {"category": results.category, "file": filename}
-                )
     result = {}
     for word, details in words.items():
         if unanimous.util.is_nonword(word):
@@ -660,25 +660,6 @@ def results_to_json(all_results):
             details["suggestion"] = suggestion.save()
         result[word] = details
     return result
-
-
-def context_to_filename(name):
-    """
-    Turn a context line into the filepath.
-    """
-    testname = name
-    if os.path.isfile(testname):
-        return testname
-    testname = testname.split(":", 1)[0]
-    if os.path.isfile(testname):
-        return testname
-    testname = testname.rsplit("(", 1)[0]
-    if os.path.isfile(testname):
-        return testname
-    testname = testname.strip()
-    if os.path.isfile(testname):
-        return testname
-    raise Exception(f"Unable to get filepath for {name}")
 
 
 def automated_process(target):  # pylint: disable=unused-argument
