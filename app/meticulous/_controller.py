@@ -13,12 +13,13 @@ class Controller:
     Manager user input and background tasks
     """
 
-    def __init__(self, handlers, input_queue, threadpool):
+    def __init__(self, handlers, input_queue, threadpool, target=None):
         self._handlers = handlers
         self._input_queue = input_queue
         self._threadpool = threadpool
         self._running = True
         self.condition = threading.Condition()
+        self.target = target
 
     def add(self, task):
         """

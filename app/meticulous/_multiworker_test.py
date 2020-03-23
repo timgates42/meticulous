@@ -7,17 +7,19 @@ from unittest import mock
 from meticulous._multiworker import main, update_workload
 
 
-def test_empty_load():
+@mock.patch("meticulous._multiworker.get_json_value")
+def test_empty_load(get_mock):
     """
-    Check updating an empty task list adds 3 repository load tasks
+    Check updating an empty task list adds 1 repository load tasks
     """
     # Setup
     initial = []
+    get_mock.return_value = {}
     # Exercise
     result = update_workload(initial)
     # Verify
     check = [1 for elem in result if elem["name"] == "repository_load"]
-    assert len(check) == 3  # noqa=S101 # nosec
+    assert len(check) == 1  # noqa=S101 # nosec
 
 
 @mock.patch("meticulous._multiworker.get_json_value")
@@ -39,6 +41,6 @@ def test_main(run_mock, set_mock, get_mock):
     get_mock.return_value = []
     set_mock.side_effect = saver
     # Exercise
-    main()
+    main(None)
     # Verify
     assert len(final) > 0  # noqa=S101 # nosec

@@ -2,9 +2,11 @@
 Load, save and pass off handling to the controller
 """
 
+from meticulous._addrepo import interactive_add_one_new_repo
 from meticulous._controller import Controller
 from meticulous._input import get_confirmation
 from meticulous._input_queue import get_input_queue
+from meticulous._processrepo import interactive_task_collect_nonwords
 from meticulous._storage import get_json_value, set_json_value
 from meticulous._threadpool import get_pool
 
@@ -15,8 +17,9 @@ def update_workload(workload):
     """
     result = list(workload)
     load_count = count_names(workload, {"repository_load"})
-    for _ in range(3 - load_count):
-        result.append({"interactive": False, "name": "repository_load"})
+    active_count = len(get_json_value("repository_map", {}))
+    for _ in range(1 - active_count - load_count):
+        result.append({"interactive": True, "name": "repository_load", "priority": 60})
     if count_names(workload, {"wait_threadpool"}) < 1:
         result.append({"interactive": True, "name": "wait_threadpool", "priority": 999})
     if count_names(workload, {"force_quit"}) < 1:
@@ -41,19 +44,54 @@ def get_handlers():
     """
     return {
         "repository_load": repository_load,
+        "collect_nonwords": collect_nonwords,
         "prompt_quit": prompt_quit,
         "wait_threadpool": wait_threadpool,
         "force_quit": force_quit,
     }
 
 
-def repository_load(_):
+def repository_load(context):
     """
     Task to pull a repository
     """
 
     def handler():
-        pass
+        target = context.controller.target
+        reponame = interactive_add_one_new_repo(target)
+        context.controller.add(
+            {
+                "name": "collect_nonwords",
+                "interactive": True,
+                "priority": 50,
+                "reponame": reponame,
+            }
+        )
+
+    return handler
+
+
+def collect_nonwords(context):
+    """
+    Task to collect nonwords from a repository until a typo is found or the
+    repository is clean
+    """
+
+    def handler():
+        target = context.controller.target
+        reponame = context.taskjson["reponame"]
+        if reponame in get_json_value("repository_map", {}):
+            interactive_task_collect_nonwords(reponame, target)
+        context.controller.add(
+            {
+                "name": "submit",
+                "interactive": True,
+                "priority": 60,
+                "reponame": reponame,
+            }
+        )
+        print("completed processing")
+        context.controller.quit()
 
     return handler
 
@@ -110,7 +148,7 @@ def force_quit(context):
     return handler
 
 
-def main():
+def main(target):
     """
     Main task should load from storage, update the workload and pass off
     handling to the controller and on termination save the result
@@ -122,7 +160,7 @@ def main():
     input_queue = get_input_queue()
     threadpool = get_pool(handlers)
     controller = Controller(
-        handlers=handlers, input_queue=input_queue, threadpool=threadpool
+        handlers=handlers, input_queue=input_queue, threadpool=threadpool, target=target
     )
     for task in workload:
         controller.add(task)
