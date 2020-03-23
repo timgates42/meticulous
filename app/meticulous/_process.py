@@ -4,45 +4,37 @@ Main processing for meticulous
 from __future__ import absolute_import, division, print_function
 
 import io
-import json
 import os
 import re
 import shutil
 import sys
 from pathlib import Path
-from urllib.parse import quote
 
 import spelling.version
 import unanimous.util
 import unanimous.version
 from colorama import Fore, Style, init
 from plumbum import FG, local
-from spelling.check import context_to_filename
 from spelling.store import get_store
 from workflow.engine import GenericWorkflowEngine
-from workflow.errors import HaltProcessing
 
 from meticulous._github import create_pr, get_parent_repo
 from meticulous._input import (
     UserCancel,
     get_confirmation,
-    get_input,
     make_choice,
     make_simple_choice,
 )
-from meticulous._multiworker import interactive_add_one_new_repo
-from meticulous._multiworker import main as multiworker_main
-from meticulous._nonword import (
-    add_non_word,
-    check_nonwords,
-    is_local_non_word,
-    load_recent_non_words,
-    update_nonwords,
+from meticulous._multiworker import (
+    add_repo_save,
+    interactive_add_one_new_repo,
+    interactive_task_collect_nonwords,
 )
+from meticulous._multiworker import main as multiworker_main
+from meticulous._nonword import load_recent_non_words
 from meticulous._storage import get_json_value, prepare, set_json_value
 from meticulous._summary import display_and_check_files
-from meticulous._util import get_browser, get_editor
-from meticulous._websearch import Suggestion
+from meticulous._util import get_editor
 
 
 def get_spelling_store_path(target):
@@ -441,21 +433,6 @@ def add_change_for_repo(repodir):
         add_repo_save(repodir, add_word, del_word, file_paths)
 
 
-def add_repo_save(repodir, add_word, del_word, file_paths):
-    """
-    Record a typo correction
-    """
-    saves = get_json_value("repository_saves", {})
-    reponame = Path(repodir).name
-    saves[reponame] = {
-        "add_word": add_word,
-        "del_word": del_word,
-        "file_paths": file_paths,
-        "repodir": repodir,
-    }
-    set_json_value("repository_saves", saves)
-
-
 def get_typo(repodir):
     """
     Look in the staged commit for the typo.
@@ -597,19 +574,6 @@ def task_add_repo(obj, eng):  # pylint: disable=unused-argument
         add_one_new_repo(obj.target)
 
 
-class NonwordState:  # pylint: disable=too-few-public-methods
-    """
-    Store the nonword workflow state.
-    """
-
-    def __init__(self, target, word, details, repopath):
-        self.target = target
-        self.word = word
-        self.details = details
-        self.repopath = repopath
-        self.done = False
-
-
 def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     """
     Saves nonwords until a typo is found
@@ -620,218 +584,8 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     if count != 1:
         print(f"Unexpected number of repostories - {count}")
         return
-    repodir = next(iter(repository_list.values()))
-    repodirpath = Path(repodir)
-    jsonpath = repodirpath / "spelling.json"
-    with io.open(jsonpath, "r", encoding="utf-8") as fobj:
-        jsonobj = json.load(fobj)
-    words = get_sorted_words(jsonobj)
-    my_engine = GenericWorkflowEngine()
-    my_engine.callbacks.replace([check_websearch, is_nonword, is_typo, what_now])
-    for word in words:
-        state = NonwordState(
-            target=obj.target, word=word, details=jsonobj[word], repopath=repodirpath
-        )
-        try:
-            my_engine.process([state])
-        except HaltProcessing:
-            if state.done:
-                return
-    print(f"{Fore.YELLOW}Completed checking all words!{Style.RESET_ALL}")
-
-
-def check_websearch(obj, eng):
-    """
-    Quick initial check to see if a websearch provides a suggestion.
-    """
-    suggestion = obj.details.get("suggestion_obj")
-    if suggestion is None:
-        return
-    show_word(obj.word, obj.details)
-    if suggestion.is_nonword:
-        if get_confirmation("Web search suggests it is a non-word, agree?"):
-            handle_nonword(obj.word, obj.target)
-            eng.halt("found nonword")
-    if suggestion.is_typo:
-        if suggestion.replacement:
-            msgs = [
-                (
-                    f"Web search suggests using {prefix}"
-                    f"{suggestion.replacement}{suffix}, agree?"
-                )
-                for prefix, suffix in [("", ""), (Fore.CYAN, Style.RESET_ALL)]
-            ]
-            print(msgs[-1])
-            if get_confirmation(msgs[0], defaultval=False):
-                fix_word(obj.word, obj.details, suggestion.replacement, obj.repopath)
-                obj.done = True
-                eng.halt("found typo")
-        msgs = [
-            (f"Web search suggests using {prefix}" f"typo{suffix}, agree?")
-            for prefix, suffix in [("", ""), (Fore.RED, Style.RESET_ALL)]
-        ]
-        print(msgs[-1])
-        if get_confirmation(msgs[0], defaultval=False):
-            handle_typo(obj.word, obj.details, obj.repopath)
-            obj.done = True
-            eng.halt("found typo")
-
-
-def is_nonword(obj, eng):
-    """
-    Quick initial check to see if it is a nonword.
-    """
-    show_word(obj.word, obj.details)
-    if get_confirmation("Is non-word?"):
-        handle_nonword(obj.word, obj.target)
-        eng.halt("found nonword")
-
-
-def is_typo(obj, eng):
-    """
-    Quick initial check to see if it is a typo.
-    """
-    show_word(obj.word, obj.details)
-    if get_confirmation("Is it typo?"):
-        handle_typo(obj.word, obj.details, obj.repopath)
-        obj.done = True
-        eng.halt("found typo")
-
-
-def what_now(obj, eng):
-    """
-    Check to see what else to do.
-    """
-    show_word(obj.word, obj.details)
-    print("Todo what now options?")
-    eng.halt("what now?")
-
-
-def show_word(word, details):  # pylint: disable=unused-argument
-    """
-    Display the word and its context.
-    """
-    print(f"Checking word {word}")
-    files = sorted(
-        set(context_to_filename(detail["file"]) for detail in details["files"])
-    )
-    for filename in files:
-        print(f"{filename}:")
-        with io.open(filename, "r", encoding="utf-8") as fobj:
-            show_next = False
-            prev_line = None
-            for line in fobj:
-                line = line.rstrip("\r\n")
-                output = get_colourized(line, word)
-                if output:
-                    if prev_line:
-                        print("-" * 60)
-                        print(prev_line)
-                        prev_line = None
-                    print(output)
-                    show_next = True
-                elif show_next:
-                    print(line)
-                    print("-" * 60)
-                    show_next = False
-                else:
-                    prev_line = line
-
-
-def get_colourized(line, word):
-    """
-    Highlight the matching word for lines it is found on.
-    """
-    replacement = "".join([Fore.YELLOW, word, Style.RESET_ALL])
-    return perform_replacement(line, word, replacement)
-
-
-def perform_replacement(line, word, replacement):
-    """
-    Run the provided word replacement
-    """
-    regex = re.compile(f"\\b({re.escape(word)})\\b")
-    if not regex.search(line):
-        return None
-    result = []
-    pos = 0
-    for match in regex.finditer(line):
-        match_start = match.start(1)
-        match_end = match.end(1)
-        result.append(line[pos:match_start])
-        result.append(replacement)
-        pos = match_end
-    result.append(line[pos:])
-    return "".join(result)
-
-
-def handle_nonword(word, target):  # pylint: disable=unused-argument
-    """
-    Handle a nonword
-    """
-    add_non_word(word, target)
-    if check_nonwords(target):
-        pullreq = update_nonwords(target)
-        print(f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}")
-
-
-def handle_typo(word, details, repopath):  # pylint: disable=unused-argument
-    """
-    Handle a typo
-    """
-    if get_confirmation(f"Do you want to google {word}"):
-        browser = local[get_browser()]
-        search = f"https://www.google.com.au/search?q={quote(word)}"
-        _ = browser[search] & FG
-    newspell = get_input(f"How do you spell {word}?")
-    if newspell:
-        fix_word(word, details, newspell, repopath)
-
-
-def fix_word(word, details, newspell, repopath):
-    """
-    Save the correction
-    """
-    print(f"Changing {word} to {newspell}")
-    files = sorted(
-        set(context_to_filename(detail["file"]) for detail in details["files"])
-    )
-    file_paths = []
-    for filename in files:
-        lines = []
-        with io.open(filename, "r", encoding="utf-8") as fobj:
-            for line in fobj:
-                line = line.rstrip("\r\n")
-                output = perform_replacement(line, word, newspell)
-                lines.append(output if output is not None else line)
-        with io.open(filename, "w", encoding="utf-8") as fobj:
-            for line in lines:
-                print(line, file=fobj)
-        git = local["git"]
-        filepath = Path(filename)
-        relpath = str(filepath.relative_to(repopath))
-        with local.cwd(str(repopath)):
-            _ = git["add"][relpath] & FG
-        file_paths.append(relpath)
-    add_repo_save(str(repopath), newspell, word, file_paths)
-
-
-def get_sorted_words(jsonobj):
-    """
-    Sort the words first by frequency
-    """
-    order = []
-    for word, details in jsonobj.items():
-        if is_local_non_word(word):
-            continue
-        priority = 0
-        if details.get("suggestion"):
-            obj = Suggestion.load(details["suggestion"])
-            details["suggestion_obj"] = obj
-            priority = obj.priority
-        order.append(((priority, len(details["files"])), word))
-    order.sort(reverse=True)
-    return [word for _, word in order]
+    reponame = next(iter(repository_list.keys()))
+    interactive_task_collect_nonwords(reponame, obj.target)
 
 
 def task_submit(obj, eng):  # pylint: disable=unused-argument
