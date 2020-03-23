@@ -18,14 +18,14 @@ class InputQueue:
         Add a user input request
         """
         priority = taskjson["priority"]
-        heapq.heappush(self.queue, (priority, taskjson))
+        heapq.heappush(self.queue, (priority, tuple(taskjson.items())))
 
     def pop(self):
         """
         Pull most important task
         """
-        _, taskjson = heapq.heappop(self.queue)
-        return taskjson
+        _, taskitems = heapq.heappop(self.queue)
+        return dict(taskitems)
 
     def save(self):
         """
@@ -33,16 +33,16 @@ class InputQueue:
         """
         result = []
         while self.queue:
-            _, taskjson = heapq.heappop(self.queue)
-            result.append(taskjson)
+            _, taskitems = heapq.heappop(self.queue)
+            result.append(dict(taskitems))
         return result
 
     def peek(self):
         """
         Get most important task without removal
         """
-        _, taskjson = self.queue[0]
-        return taskjson
+        _, taskitems = self.queue[0]
+        return dict(taskitems)
 
 
 def get_input_queue():

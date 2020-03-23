@@ -6,6 +6,7 @@ from meticulous._addrepo import interactive_add_one_new_repo
 from meticulous._controller import Controller
 from meticulous._input import get_confirmation
 from meticulous._input_queue import get_input_queue
+from meticulous._processrepo import interactive_task_collect_nonwords
 from meticulous._storage import get_json_value, set_json_value
 from meticulous._threadpool import get_pool
 
@@ -43,6 +44,7 @@ def get_handlers():
     """
     return {
         "repository_load": repository_load,
+        "collect_nonwords": collect_nonwords,
         "prompt_quit": prompt_quit,
         "wait_threadpool": wait_threadpool,
         "force_quit": force_quit,
@@ -62,6 +64,29 @@ def repository_load(context):
                 "name": "collect_nonwords",
                 "interactive": True,
                 "priority": 50,
+                "reponame": reponame,
+            }
+        )
+
+    return handler
+
+
+def collect_nonwords(context):
+    """
+    Task to collect nonwords from a repository until a typo is found or the
+    repository is clean
+    """
+
+    def handler():
+        target = context.controller.target
+        reponame = context.taskjson["reponame"]
+        if reponame in get_json_value("repository_map", {}):
+            interactive_task_collect_nonwords(reponame, target)
+        context.controller.add(
+            {
+                "name": "submit",
+                "interactive": True,
+                "priority": 60,
                 "reponame": reponame,
             }
         )

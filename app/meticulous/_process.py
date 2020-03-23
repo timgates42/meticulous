@@ -18,6 +18,7 @@ from plumbum import FG, local
 from spelling.store import get_store
 from workflow.engine import GenericWorkflowEngine
 
+from meticulous._addrepo import interactive_add_one_new_repo
 from meticulous._github import create_pr, get_parent_repo
 from meticulous._input import (
     UserCancel,
@@ -25,13 +26,9 @@ from meticulous._input import (
     make_choice,
     make_simple_choice,
 )
-from meticulous._multiworker import (
-    add_repo_save,
-    interactive_add_one_new_repo,
-    interactive_task_collect_nonwords,
-)
 from meticulous._multiworker import main as multiworker_main
 from meticulous._nonword import load_recent_non_words
+from meticulous._processrepo import add_repo_save, interactive_task_collect_nonwords
 from meticulous._storage import get_json_value, prepare, set_json_value
 from meticulous._summary import display_and_check_files
 from meticulous._util import get_editor
