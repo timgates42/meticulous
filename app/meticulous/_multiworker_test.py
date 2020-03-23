@@ -39,6 +39,6 @@ def test_main(run_mock, set_mock, get_mock):
     get_mock.return_value = []
     set_mock.side_effect = saver
     # Exercise
-    main()
+    main(None)
     # Verify
     assert len(final) > 0  # noqa=S101 # nosec
