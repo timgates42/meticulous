@@ -71,7 +71,7 @@ def collect_nonwords(context):
             {
                 "name": "submit",
                 "interactive": True,
-                "priority": 60,
+                "priority": 50,
                 "reponame": reponame,
             }
         )
@@ -95,7 +95,7 @@ def submit(context):
             {
                 "name": "cleanup",
                 "interactive": True,
-                "priority": 70,
+                "priority": 20,
                 "reponame": reponame,
             }
         )
@@ -116,7 +116,7 @@ def cleanup(context):
             reposave = repository_map[reponame]
             remove_repo_for(reponame, reposave, confirm=False)
         context.controller.add(
-            {"name": "prompt_quit", "interactive": True, "priority": 40}
+            {"name": "prompt_quit", "interactive": True, "priority": 10}
         )
 
     return handler
