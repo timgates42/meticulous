@@ -2,7 +2,7 @@
 Load, save and pass off handling to the controller
 """
 
-from meticulous._addrepo import interactive_add_one_new_repo
+from meticulous._addrepo import addrepo_handlers
 from meticulous._cleanup import remove_repo_for
 from meticulous._controller import Controller
 from meticulous._input import get_confirmation
@@ -20,7 +20,7 @@ def update_workload(workload):
     result = list(workload)
     load_count = count_names(workload, {"repository_load"})
     active_count = len(get_json_value("repository_map", {}))
-    for _ in range(1 - active_count - load_count):
+    for _ in range(2 - active_count - load_count):
         result.append({"interactive": True, "name": "repository_load", "priority": 40})
     if count_names(workload, {"wait_threadpool"}) < 1:
         result.append({"interactive": True, "name": "wait_threadpool", "priority": 999})
@@ -44,8 +44,7 @@ def get_handlers():
     """
     Obtain the handler factory lookup
     """
-    return {
-        "repository_load": repository_load,
+    handlers = {
         "collect_nonwords": collect_nonwords,
         "submit": submit,
         "cleanup": cleanup,
@@ -53,26 +52,8 @@ def get_handlers():
         "wait_threadpool": wait_threadpool,
         "force_quit": force_quit,
     }
-
-
-def repository_load(context):
-    """
-    Task to pull a repository
-    """
-
-    def handler():
-        target = context.controller.target
-        reponame = interactive_add_one_new_repo(target)
-        context.controller.add(
-            {
-                "name": "collect_nonwords",
-                "interactive": True,
-                "priority": 50,
-                "reponame": reponame,
-            }
-        )
-
-    return handler
+    handlers.update(addrepo_handlers())
+    return handlers
 
 
 def collect_nonwords(context):
