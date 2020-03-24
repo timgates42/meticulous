@@ -3,11 +3,13 @@ Load, save and pass off handling to the controller
 """
 
 from meticulous._addrepo import interactive_add_one_new_repo
+from meticulous._cleanup import remove_repo_for
 from meticulous._controller import Controller
 from meticulous._input import get_confirmation
 from meticulous._input_queue import get_input_queue
 from meticulous._processrepo import interactive_task_collect_nonwords
 from meticulous._storage import get_json_value, set_json_value
+from meticulous._submit import fast_prepare_a_pr_or_issue_for
 from meticulous._threadpool import get_pool
 
 
@@ -19,7 +21,7 @@ def update_workload(workload):
     load_count = count_names(workload, {"repository_load"})
     active_count = len(get_json_value("repository_map", {}))
     for _ in range(1 - active_count - load_count):
-        result.append({"interactive": True, "name": "repository_load", "priority": 60})
+        result.append({"interactive": True, "name": "repository_load", "priority": 40})
     if count_names(workload, {"wait_threadpool"}) < 1:
         result.append({"interactive": True, "name": "wait_threadpool", "priority": 999})
     if count_names(workload, {"force_quit"}) < 1:
@@ -45,6 +47,8 @@ def get_handlers():
     return {
         "repository_load": repository_load,
         "collect_nonwords": collect_nonwords,
+        "submit": submit,
+        "cleanup": cleanup,
         "prompt_quit": prompt_quit,
         "wait_threadpool": wait_threadpool,
         "force_quit": force_quit,
@@ -90,8 +94,49 @@ def collect_nonwords(context):
                 "reponame": reponame,
             }
         )
-        print("completed processing")
-        context.controller.quit()
+
+    return handler
+
+
+def submit(context):
+    """
+    Task to submit a pull request/issue
+    repository is clean
+    """
+
+    def handler():
+        reponame = context.taskjson["reponame"]
+        repository_saves = get_json_value("repository_saves", {})
+        if reponame in repository_saves:
+            reposave = repository_saves[reponame]
+            fast_prepare_a_pr_or_issue_for(reponame, reposave)
+        context.controller.add(
+            {
+                "name": "cleanup",
+                "interactive": True,
+                "priority": 70,
+                "reponame": reponame,
+            }
+        )
+
+    return handler
+
+
+def cleanup(context):
+    """
+    Task to collect nonwords from a repository until a typo is found or the
+    repository is clean
+    """
+
+    def handler():
+        reponame = context.taskjson["reponame"]
+        repository_map = get_json_value("repository_map", {})
+        if reponame in repository_map:
+            reposave = repository_map[reponame]
+            remove_repo_for(reponame, reposave, confirm=False)
+        context.controller.add(
+            {"name": "prompt_quit", "interactive": True, "priority": 40}
+        )
 
     return handler
 
@@ -133,6 +178,10 @@ def prompt_quit(context):
     def handler():
         if get_confirmation(message="Do you want to quit?", defaultval=True):
             context.controller.quit()
+        else:
+            context.controller.add(
+                {"name": "repository_load", "interactive": True, "priority": 40}
+            )
 
     return handler
 
