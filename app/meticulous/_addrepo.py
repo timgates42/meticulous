@@ -32,6 +32,7 @@ def addrepo_handlers():
     return {
         "repository_load": repository_load,
         "repository_checkout": repository_checkout,
+        "repository_summary": repository_summary,
     }
 
 

@@ -20,7 +20,7 @@ def update_workload(workload):
     result = list(workload)
     load_count = count_names(workload, {"repository_load"})
     active_count = len(get_json_value("repository_map", {}))
-    for _ in range(3 - active_count - load_count):
+    for _ in range(2 - active_count - load_count):
         result.append({"interactive": True, "name": "repository_load", "priority": 40})
     if count_names(workload, {"wait_threadpool"}) < 1:
         result.append({"interactive": True, "name": "wait_threadpool", "priority": 999})

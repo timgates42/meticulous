@@ -274,7 +274,7 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
     key = "repository_map"
     repository_list = get_json_value(key, {})
     count = len(repository_list)
-    if count != 1:
+    if count < 1:
         print(f"Unexpected number of repostories - {count}")
         return
     reponame = next(iter(repository_list.keys()))
@@ -287,7 +287,7 @@ def task_submit(obj, eng):  # pylint: disable=unused-argument
     """
     repository_saves = get_json_value("repository_saves", {})
     count = len(repository_saves)
-    if count != 1:
+    if count < 1:
         print(f"Unexpected number of repostories - {count}")
         return
     reponame, reposave = next(iter(repository_saves.items()))
@@ -301,7 +301,7 @@ def task_cleanup(obj, eng):  # pylint: disable=unused-argument
     key = "repository_map"
     repository_map = get_json_value(key, {})
     count = len(repository_map)
-    if count != 1:
+    if count < 1:
         print(f"Unexpected number of repostories - {count}")
         return
     reponame, reposave = next(iter(repository_map.items()))
