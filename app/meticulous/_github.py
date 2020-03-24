@@ -2,10 +2,8 @@
 Handlers for checking existing forks and creating new ones.
 """
 
-import sys
-
 import github
-from plumbum import FG, local
+from plumbum import local
 
 from meticulous._secrets import load_api_key
 from meticulous._storage import get_value, set_value
@@ -94,18 +92,14 @@ def checkout(repo, target):
     user_org = api.get_user().login
     clone_target = target / repo
     if clone_target.exists():
-        print(f"{clone_target} already exists, clone aborted.", file=sys.stderr)
-        sys.exit(1)
+        return
     git = local["/usr/bin/git"]
     with local.cwd(str(target)):
-        _ = (
-            git[
-                "clone",
-                "--depth=3",
-                f"ssh://git@github.com/{user_org}/{repo}",
-                str(clone_target),
-            ]
-            & FG
+        git(
+            "clone",
+            "--depth=3",
+            f"ssh://git@github.com/{user_org}/{repo}",
+            str(clone_target),
         )
 
 

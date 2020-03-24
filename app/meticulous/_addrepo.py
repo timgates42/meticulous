@@ -45,7 +45,7 @@ def repository_load(context):
         reponame = interactive_pickrepo()
         if reponame is None:
             context.controller.add(
-                {"name": "prompt_quit", "interactive": True, "priority": 50}
+                {"name": "prompt_quit", "interactive": True, "priority": 65}
             )
         context.controller.add(
             {"name": "repository_checkout", "interactive": False, "reponame": reponame}
@@ -67,7 +67,7 @@ def repository_checkout(context):
             {
                 "name": "repository_summary",
                 "interactive": True,
-                "priority": 50,
+                "priority": 55,
                 "reponame": reponame,
             }
         )
@@ -83,9 +83,8 @@ def repository_summary(context):
     def handler():
         target = context.controller.target
         reponame = context.taskjson["reponame"]
-        if get_confirmation(f"Display readme for {reponame}?"):
-            repodir = target / reponame
-            display_repo_intro(repodir)
+        repodir = target / reponame
+        display_repo_intro(repodir)
         context.controller.add(
             {
                 "name": "collect_nonwords",
@@ -94,6 +93,8 @@ def repository_summary(context):
                 "reponame": reponame,
             }
         )
+        if get_confirmation(f"Do you want to quit?"):
+            context.controller.quit()
 
     return handler
 
