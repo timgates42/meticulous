@@ -17,6 +17,7 @@ from meticulous._github import (
     is_archived,
     issues_allowed,
 )
+from meticulous._input import get_confirmation
 from meticulous._nonword import is_local_non_word
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, set_json_value
@@ -24,9 +25,104 @@ from meticulous._summary import display_repo_intro
 from meticulous._websearch import get_suggestion
 
 
+def addrepo_handlers():
+    """
+    Get multiqueue task handlers for adding a repository
+    """
+    return {
+        "repository_load": repository_load,
+        "repository_checkout": repository_checkout,
+    }
+
+
+def repository_load(context):
+    """
+    Task to pull a repository
+    """
+
+    def handler():
+        reponame = interactive_pickrepo()
+        if reponame is None:
+            context.controller.add(
+                {"name": "prompt_quit", "interactive": True, "priority": 50}
+            )
+        context.controller.add(
+            {"name": "repository_checkout", "interactive": False, "reponame": reponame}
+        )
+
+    return handler
+
+
+def repository_checkout(context):
+    """
+    Task to pull a repository
+    """
+
+    def handler():
+        target = context.controller.target
+        reponame = context.taskjson["reponame"]
+        noninteractive_checkout(target, reponame)
+        context.controller.add(
+            {
+                "name": "repository_summary",
+                "interactive": True,
+                "priority": 50,
+                "reponame": reponame,
+            }
+        )
+
+    return handler
+
+
+def repository_summary(context):
+    """
+    Task to pull a repository
+    """
+
+    def handler():
+        target = context.controller.target
+        reponame = context.taskjson["reponame"]
+        if get_confirmation(f"Display readme for {reponame}?"):
+            repodir = target / reponame
+            display_repo_intro(repodir)
+        context.controller.add(
+            {
+                "name": "collect_nonwords",
+                "interactive": True,
+                "priority": 50,
+                "reponame": reponame,
+            }
+        )
+
+    return handler
+
+
 def interactive_add_one_new_repo(target):
     """
     Locate a new repository and add it to the available set.
+    """
+    repo = interactive_pickrepo()
+    if repo is None:
+        return None
+    noninteractive_checkout(target, repo)
+    repodir = target / repo
+    display_repo_intro(repodir)
+    return repo
+
+
+def noninteractive_checkout(target, repo):
+    """
+    Handle obtaining and spell checking repo
+    """
+    print(f"Checkout {repo}")
+    checkout(repo, target)
+    spelling_check(repo, target)
+    return repo
+
+
+def interactive_pickrepo():
+    """
+    Select next free repo
     """
     repository_forked = get_json_value("repository_forked", {})
     for orgrepo in obtain_sources():
@@ -52,9 +148,6 @@ def interactive_add_one_new_repo(target):
             repository_forked[repo] = True
             set_json_value("repository_forked", repository_forked)
             continue
-        print(f"Checkout {repo}")
-        checkout(repo, target)
-        spelling_check(repo, target)
         repository_forked[origrepo] = True
         repository_forked[repo] = True
         set_json_value("repository_forked", repository_forked)
@@ -67,10 +160,6 @@ def spelling_check(repo, target):
     Run the spelling check on the target repo.
     """
     repodir = target / repo
-    print(f"Running spell check on {repodir}")
-    spellpath = repodir / "spelling.txt"
-    print(f"Spelling output {spellpath}")
-    display_repo_intro(repodir)
     jsonpath = repodir / "spelling.json"
     procobj = subprocess.Popen(  # noqa=S603 # nosec
         [

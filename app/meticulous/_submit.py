@@ -37,6 +37,11 @@ def fast_prepare_a_pr_or_issue_for(reponame, reposave):
     if display_and_check_files(repopath / "CONTRIBUTING.md"):
         suggest_issue = True
     if not suggest_issue:
+        add_word = reposave["add_word"]
+        del_word = reposave["del_word"]
+        file_paths = reposave["file_paths"]
+        files = ", ".join(file_paths)
+        print(f"Fix in {reponame}: {del_word} -> {add_word} over {files}")
         if get_confirmation("Analysis suggests plain pr, agree?"):
             plain_pr_for(reponame, reposave)
             return
