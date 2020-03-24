@@ -62,10 +62,8 @@ def run_invocation(target):
     load_recent_non_words(target)
     validate_versions()
     try:
-        if get_confirmation("Run automated process?"):
-            automated_process(target)
-            while get_confirmation("Run automated process again?"):
-                automated_process(target)
+        if get_confirmation("Run automated multi-queue processing?"):
+            multiworker_main(target)
         else:
             manual_menu(target)
     except UserCancel:
