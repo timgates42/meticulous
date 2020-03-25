@@ -9,6 +9,7 @@ import sys
 
 import unanimous
 
+from github import GithubException
 from meticulous._github import (
     check_forked,
     checkout,
@@ -134,7 +135,10 @@ def interactive_pickrepo():
         _, origrepo = orgrepo.split("/", 1)
         if origrepo in repository_forked:
             continue
-        orgrepo = get_true_orgrepo(orgrepo)
+        try:
+            orgrepo = get_true_orgrepo(orgrepo)
+        except GithubException:
+            continue
         _, repo = orgrepo.split("/", 1)
         if repo in repository_forked:
             continue
