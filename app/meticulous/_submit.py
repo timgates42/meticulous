@@ -44,7 +44,12 @@ def submit(context):
             reposave = repository_saves[reponame]
             if check_if_plain_pr(reponame, reposave):
                 context.controller.add(
-                    {"name": "plain_pr", "interactive": False, "reponame": reponame}
+                    {
+                        "name": "plain_pr",
+                        "interactive": False,
+                        "reponame": reponame,
+                        "reposave": str(reposave),
+                    }
                 )
             else:
                 prepare_a_pr_or_issue_for(reponame, reposave)
@@ -60,9 +65,8 @@ def plain_pr(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        repository_saves = get_json_value("repository_saves", {})
-        if reponame in repository_saves:
-            plain_pr_for(reponame, repository_saves[reponame])
+        reposave = Path(context.taskjson["reposave"])
+        plain_pr_for(reponame, reposave)
         add_cleanup(context, reponame)
 
     return handler
