@@ -9,7 +9,7 @@ from meticulous._input import get_confirmation
 from meticulous._input_queue import get_input_queue
 from meticulous._processrepo import interactive_task_collect_nonwords
 from meticulous._storage import get_json_value, set_json_value
-from meticulous._submit import fast_prepare_a_pr_or_issue_for
+from meticulous._submit import submit_handlers
 from meticulous._threadpool import get_pool
 
 
@@ -46,13 +46,13 @@ def get_handlers():
     """
     handlers = {
         "collect_nonwords": collect_nonwords,
-        "submit": submit,
         "cleanup": cleanup,
         "prompt_quit": prompt_quit,
         "wait_threadpool": wait_threadpool,
         "force_quit": force_quit,
     }
     handlers.update(addrepo_handlers())
+    handlers.update(submit_handlers())
     return handlers
 
 
@@ -72,30 +72,6 @@ def collect_nonwords(context):
                 "name": "submit",
                 "interactive": True,
                 "priority": 50,
-                "reponame": reponame,
-            }
-        )
-
-    return handler
-
-
-def submit(context):
-    """
-    Task to submit a pull request/issue
-    repository is clean
-    """
-
-    def handler():
-        reponame = context.taskjson["reponame"]
-        repository_saves = get_json_value("repository_saves", {})
-        if reponame in repository_saves:
-            reposave = repository_saves[reponame]
-            fast_prepare_a_pr_or_issue_for(reponame, reposave)
-        context.controller.add(
-            {
-                "name": "cleanup",
-                "interactive": True,
-                "priority": 20,
                 "reponame": reponame,
             }
         )
