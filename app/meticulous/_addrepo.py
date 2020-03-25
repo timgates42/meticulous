@@ -84,6 +84,9 @@ def repository_summary(context):
         target = context.controller.target
         reponame = context.taskjson["reponame"]
         repodir = target / reponame
+        repository_map = get_json_value("repository_map", {})
+        repository_map[reponame] = str(repodir)
+        set_json_value("repository_map", repository_map)
         display_repo_intro(repodir)
         context.controller.add(
             {
@@ -187,9 +190,6 @@ def spelling_check(repo, target):
     jsonobj = update_json_results(jsonobj)
     with io.open(jsonpath, "w", encoding="utf-8") as fobj:
         json.dump(jsonobj, fobj)
-    repository_map = get_json_value("repository_map", {})
-    repository_map[repo] = str(repodir)
-    set_json_value("repository_map", repository_map)
     if not issues_allowed(repo):
         no_issues_path = repodir / "__no_issues__.txt"
         with io.open(no_issues_path, "w", encoding="utf-8") as fobj:

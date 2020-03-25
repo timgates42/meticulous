@@ -19,8 +19,40 @@ from meticulous._input import (
     make_simple_choice,
 )
 from meticulous._processrepo import add_repo_save
+from meticulous._storage import get_json_value
 from meticulous._summary import display_and_check_files
 from meticulous._util import get_editor
+
+
+def submit_handlers():
+    """
+    Obtain multithread task handlers for submission.
+    """
+    return {"submit": submit}
+
+
+def submit(context):
+    """
+    Task to submit a pull request/issue
+    repository is clean
+    """
+
+    def handler():
+        reponame = context.taskjson["reponame"]
+        repository_saves = get_json_value("repository_saves", {})
+        if reponame in repository_saves:
+            reposave = repository_saves[reponame]
+            fast_prepare_a_pr_or_issue_for(reponame, reposave)
+        context.controller.add(
+            {
+                "name": "cleanup",
+                "interactive": True,
+                "priority": 20,
+                "reponame": reponame,
+            }
+        )
+
+    return handler
 
 
 def fast_prepare_a_pr_or_issue_for(reponame, reposave):
