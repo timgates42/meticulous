@@ -8,8 +8,8 @@ import subprocess  # noqa=S404 # nosec
 import sys
 
 import unanimous
-
 from github import GithubException
+
 from meticulous._github import (
     check_forked,
     checkout,
