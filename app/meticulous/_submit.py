@@ -28,7 +28,7 @@ def submit_handlers():
     """
     Obtain multithread task handlers for submission.
     """
-    return {"submit": submit}
+    return {"submit": submit, "plain_pr": plain_pr}
 
 
 def submit(context):
@@ -42,17 +42,39 @@ def submit(context):
         repository_saves = get_json_value("repository_saves", {})
         if reponame in repository_saves:
             reposave = repository_saves[reponame]
-            fast_prepare_a_pr_or_issue_for(reponame, reposave)
-        context.controller.add(
-            {
-                "name": "cleanup",
-                "interactive": True,
-                "priority": 20,
-                "reponame": reponame,
-            }
-        )
+            if check_if_plain_pr(reponame, reposave):
+                context.controller.add(
+                    {"name": "plain_pr", "interactive": False, "reponame": reponame}
+                )
+            else:
+                prepare_a_pr_or_issue_for(reponame, reposave)
+                add_cleanup(context, reponame)
 
     return handler
+
+
+def plain_pr(context):
+    """
+    Non-interactive task to finish off submission of a pr
+    """
+
+    def handler():
+        reponame = context.taskjson["reponame"]
+        repository_saves = get_json_value("repository_saves", {})
+        if reponame in repository_saves:
+            plain_pr_for(reponame, repository_saves[reponame])
+        add_cleanup(context, reponame)
+
+    return handler
+
+
+def add_cleanup(context, reponame):
+    """
+    Kick off cleanup on completion
+    """
+    context.controller.add(
+        {"name": "cleanup", "interactive": True, "priority": 20, "reponame": reponame}
+    )
 
 
 def fast_prepare_a_pr_or_issue_for(reponame, reposave):
@@ -60,6 +82,18 @@ def fast_prepare_a_pr_or_issue_for(reponame, reposave):
     Display a suggestion if the repository looks like it wants an issue and a
     pull request or is happy with just a pull request.
     """
+    if check_if_plain_pr(reponame, reposave):
+        plain_pr_for(reponame, reposave)
+    else:
+        prepare_a_pr_or_issue_for(reponame, reposave)
+
+
+def check_if_plain_pr(reponame, reposave):
+    """
+    Display a suggestion if the repository looks like it wants an issue and a
+    pull request or is happy with just a pull request.
+    """
+
     repopath = Path(reposave["repodir"])
     suggest_issue = False
     if display_and_check_files(repopath / ".github" / "ISSUE_TEMPLATE"):
@@ -75,9 +109,8 @@ def fast_prepare_a_pr_or_issue_for(reponame, reposave):
         files = ", ".join(file_paths)
         print(f"Fix in {reponame}: {del_word} -> {add_word} over {files}")
         if get_confirmation("Analysis suggests plain pr, agree?"):
-            plain_pr_for(reponame, reposave)
-            return
-    prepare_a_pr_or_issue_for(reponame, reposave)
+            return True
+    return False
 
 
 def plain_pr_for(reponame, reposave):
