@@ -20,8 +20,8 @@ def update_workload(workload):
     result = list(workload)
     load_count = count_names(workload, {"repository_load"})
     active_count = len(get_json_value("repository_map", {}))
-    for _ in range(2 - active_count - load_count):
-        result.append({"interactive": True, "name": "repository_load", "priority": 40})
+    for _ in range(4 - active_count - load_count):
+        result.append({"interactive": True, "name": "repository_load", "priority": 5})
     if count_names(workload, {"wait_threadpool"}) < 1:
         result.append({"interactive": True, "name": "wait_threadpool", "priority": 999})
     if count_names(workload, {"force_quit"}) < 1:
@@ -137,7 +137,7 @@ def prompt_quit(context):
             context.controller.quit()
         else:
             context.controller.add(
-                {"name": "repository_load", "interactive": True, "priority": 40}
+                {"name": "repository_load", "interactive": True, "priority": 5}
             )
 
     return handler
