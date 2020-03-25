@@ -19,7 +19,7 @@ def test_empty_load(get_mock):
     result = update_workload(initial)
     # Verify
     check = [1 for elem in result if elem["name"] == "repository_load"]
-    assert len(check) == 2  # noqa=S101 # nosec
+    assert len(check) == 4  # noqa=S101 # nosec
 
 
 @mock.patch("meticulous._multiworker.get_json_value")
