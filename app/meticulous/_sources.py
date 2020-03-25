@@ -14,13 +14,20 @@ SOURCE_MARKDOWN_URLS = [
     "https://raw.githubusercontent.com/shahraizali/awesome-django/master/README.md",
 ]
 
+# Organisations or Users who have requested to be excluded from typo fixes
+BLACKLISTED_ORGUSERS = {"angvp"}
+
 
 def obtain_sources():
     """
     Scan source list and return organizations/repositories
     """
     for url in SOURCE_MARKDOWN_URLS:
-        yield from check_url(url)
+        for orgrepo in check_url(url):
+            orguser = orgrepo.split("/", 1)[0]
+            if orguser in BLACKLISTED_ORGUSERS:
+                continue
+            yield orgrepo
 
 
 def check_url(url):
