@@ -48,7 +48,7 @@ def submit(context):
                         "name": "plain_pr",
                         "interactive": False,
                         "reponame": reponame,
-                        "reposave": str(reposave),
+                        "reposave": reposave,
                     }
                 )
             else:
@@ -65,7 +65,7 @@ def plain_pr(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        reposave = Path(context.taskjson["reposave"])
+        reposave = context.taskjson["reposave"]
         plain_pr_for(reponame, reposave)
         add_cleanup(context, reponame)
 
