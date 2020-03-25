@@ -122,7 +122,7 @@ def plain_pr_for(reponame, reposave):
     Create and submit the standard PR.
     """
     make_a_commit(reponame, reposave, False)
-    submit_commit(reponame, reposave, None)
+    non_interactive_submit_commit(reponame, reposave)
 
 
 def prepare_a_pr_or_issue_for(reponame, reposave):
@@ -291,6 +291,13 @@ def load_commit_like_file(path):
 
 def submit_commit(reponame, reposave, ctxt):  # pylint: disable=unused-argument
     """
+    Push up a commit and show message
+    """
+    print(non_interactive_submit_commit(reponame, reposave))
+
+
+def non_interactive_submit_commit(reponame, reposave):
+    """
     Push up a commit
     """
     repodir = Path(reposave["repodir"])
@@ -299,7 +306,7 @@ def submit_commit(reponame, reposave, ctxt):  # pylint: disable=unused-argument
     title, body = load_commit_like_file(commit_path)
     from_branch, to_branch = push_commit(repodir, add_word)
     pullreq = create_pr(reponame, title, body, from_branch, to_branch)
-    print(f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}")
+    return f"Created PR #{pullreq.number} view at {pullreq.html_url}"
 
 
 def push_commit(repodir, add_word):
@@ -310,8 +317,8 @@ def push_commit(repodir, add_word):
     with local.cwd(repodir):
         to_branch = git("symbolic-ref", "--short", "HEAD").strip()
         from_branch = f"bugfix_typo_{add_word.replace(' ', '_')}"
-        _ = git["commit", "-F", "__commit__.txt"] & FG
-        _ = git["push", "origin", f"{to_branch}:{from_branch}"] & FG
+        git("commit", "-F", "__commit__.txt")
+        git("push", "origin", f"{to_branch}:{from_branch}")
     return from_branch, to_branch
 
 
