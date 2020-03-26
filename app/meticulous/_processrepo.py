@@ -94,7 +94,7 @@ def noninteractive_nonword_delegate(context):
     """
 
     def handler():
-        context.controller.add({"name": "nonword_update", "interactive": True})
+        context.controller.add({"name": "nonword_update", "interactive": False})
 
     return handler
 
