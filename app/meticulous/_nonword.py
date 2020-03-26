@@ -9,7 +9,7 @@ import re
 import sys
 from pathlib import Path
 
-from plumbum import FG, local
+from plumbum import local
 
 from meticulous._github import check_forked, checkout, create_pr, fork
 
@@ -76,18 +76,18 @@ def update_nonwords(target):
     git = local["git"]
     pyexe = local[sys.executable]
     with local.cwd(str(path.parent)):
-        _ = git["add", path.name] & FG
-        _ = git["commit", "-m", "update nonwords"] & FG
-        _ = git["pull", "--no-edit"] & FG
+        git("add", path.name)
+        git("commit", "-m", "update nonwords")
+        git("pull", "--no-edit")
     with local.cwd(str(path.parent / "app")):
-        _ = pyexe["-m", "unanimous"] & FG
-    num = random.randrange(100000, 999999)  # noqa: DUO102 # nosec
+        pyexe("-m", "unanimous")
+    num = random.randrange(100000, 999999)  # noqa: S311,DUO102 # nosec
     to_branch = "master"
     from_branch = f"nonwords_{num}"
     with local.cwd(str(path.parent)):
-        _ = git["add", "."] & FG
-        _ = git["commit", "-m", "update nonwords"] & FG
-        _ = git["push", "origin", f"{to_branch}:{from_branch}"] & FG
+        git("add", ".")
+        git("commit", "-m", "update nonwords")
+        git("push", "origin", f"{to_branch}:{from_branch}")
     reponame = "unanimous"
     title = "Add nonwords"
     body = title

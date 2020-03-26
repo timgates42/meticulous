@@ -7,7 +7,7 @@ from meticulous._cleanup import remove_repo_for
 from meticulous._controller import Controller
 from meticulous._input import get_confirmation
 from meticulous._input_queue import get_input_queue
-from meticulous._processrepo import interactive_task_collect_nonwords
+from meticulous._processrepo import processrepo_handlers
 from meticulous._storage import get_json_value, set_json_value
 from meticulous._submit import submit_handlers
 from meticulous._threadpool import get_pool
@@ -45,38 +45,15 @@ def get_handlers():
     Obtain the handler factory lookup
     """
     handlers = {
-        "collect_nonwords": collect_nonwords,
         "cleanup": cleanup,
         "prompt_quit": prompt_quit,
         "wait_threadpool": wait_threadpool,
         "force_quit": force_quit,
     }
     handlers.update(addrepo_handlers())
+    handlers.update(processrepo_handlers())
     handlers.update(submit_handlers())
     return handlers
-
-
-def collect_nonwords(context):
-    """
-    Task to collect nonwords from a repository until a typo is found or the
-    repository is clean
-    """
-
-    def handler():
-        target = context.controller.target
-        reponame = context.taskjson["reponame"]
-        if reponame in get_json_value("repository_map", {}):
-            interactive_task_collect_nonwords(reponame, target)
-        context.controller.add(
-            {
-                "name": "submit",
-                "interactive": True,
-                "priority": 50,
-                "reponame": reponame,
-            }
-        )
-
-    return handler
 
 
 def cleanup(context):
