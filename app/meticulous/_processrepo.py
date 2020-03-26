@@ -31,20 +31,94 @@ class NonwordState:  # pylint: disable=too-few-public-methods
     Store the nonword workflow state.
     """
 
-    def __init__(self, target, word, details, repopath):
+    def __init__(  # pylint: disable=too-many-arguments
+        self, target, word, details, repopath, nonword_delegate
+    ):
         self.target = target
         self.word = word
         self.details = details
         self.repopath = repopath
+        self.nonword_delegate = nonword_delegate
         self.done = False
 
 
+def processrepo_handlers():
+    """
+    Add mutliqueue handlers for processing a repository
+    """
+    return {"collect_nonwords": collect_nonwords, "nonword_update": nonword_update}
+
+
+def collect_nonwords(context):
+    """
+    Task to collect nonwords from a repository until a typo is found or the
+    repository is clean
+    """
+
+    def handler():
+        target = context.controller.target
+        reponame = context.taskjson["reponame"]
+        if reponame in get_json_value("repository_map", {}):
+            interactive_task_collect_nonwords(
+                reponame,
+                target,
+                nonword_delegate=noninteractive_nonword_delegate(context),
+            )
+        context.controller.add(
+            {
+                "name": "submit",
+                "interactive": True,
+                "priority": 50,
+                "reponame": reponame,
+            }
+        )
+
+    return handler
+
+
+def nonword_update(context):
+    """
+    Task to push nonwords upstream
+    """
+
+    def handler():
+        target = context.controller.target
+        update_nonwords(target)
+
+    return handler
+
+
+def noninteractive_nonword_delegate(context):
+    """
+    Obtain a basic interactive nonword update
+    """
+
+    def handler():
+        context.controller.add({"name": "nonword_update", "interactive": True})
+
+    return handler
+
+
+def interactive_nonword_delegate(target):
+    """
+    Obtain a basic interactive nonword update
+    """
+
+    def handler():
+        pullreq = update_nonwords(target)
+        print(f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}")
+
+    return handler
+
+
 def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
-    reponame, target
+    reponame, target, nonword_delegate=None
 ):
     """
     Saves nonwords until a typo is found
     """
+    if nonword_delegate is None:
+        nonword_delegate = interactive_nonword_delegate(target)
     key = "repository_map"
     repository_map = get_json_value(key, {})
     repodir = repository_map[reponame]
@@ -57,7 +131,11 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
     my_engine.callbacks.replace([check_websearch, is_nonword, is_typo, what_now])
     for word in words:
         state = NonwordState(
-            target=target, word=word, details=jsonobj[word], repopath=repodirpath
+            target=target,
+            word=word,
+            details=jsonobj[word],
+            repopath=repodirpath,
+            nonword_delegate=nonword_delegate,
         )
         try:
             my_engine.process([state])
@@ -95,7 +173,7 @@ def check_websearch(obj, eng):
     show_word(obj.word, obj.details)
     if suggestion.is_nonword:
         if get_confirmation("Web search suggests it is a non-word, agree?"):
-            handle_nonword(obj.word, obj.target)
+            handle_nonword(obj.word, obj.target, obj.nonword_delegate)
             eng.halt("found nonword")
     if suggestion.is_typo:
         if suggestion.replacement:
@@ -128,7 +206,7 @@ def is_nonword(obj, eng):
     """
     show_word(obj.word, obj.details)
     if get_confirmation("Is non-word?"):
-        handle_nonword(obj.word, obj.target)
+        handle_nonword(obj.word, obj.target, obj.nonword_delegate)
         eng.halt("found nonword")
 
 
@@ -210,14 +288,13 @@ def perform_replacement(line, word, replacement):
     return "".join(result)
 
 
-def handle_nonword(word, target):  # pylint: disable=unused-argument
+def handle_nonword(word, target, nonword_delegate):  # pylint: disable=unused-argument
     """
     Handle a nonword
     """
     add_non_word(word, target)
     if check_nonwords(target):
-        pullreq = update_nonwords(target)
-        print(f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}")
+        nonword_delegate()
 
 
 def handle_typo(word, details, repopath):  # pylint: disable=unused-argument
