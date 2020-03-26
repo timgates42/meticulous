@@ -24,7 +24,7 @@ from meticulous._input import (
     make_choice,
     make_simple_choice,
 )
-from meticulous._multiworker import clear_work_queue
+from meticulous._multiworker import clear_work_queue, show_work_queue
 from meticulous._multiworker import main as multiworker_main
 from meticulous._nonword import load_recent_non_words
 from meticulous._processrepo import interactive_task_collect_nonwords
@@ -100,6 +100,7 @@ def manual_menu(target):
                 "automated process": automated_process,
                 "automated work queue": multiworker_main,
                 "clear work queue": clear_work_queue,
+                "show work queue": show_work_queue,
                 "examine a repository": examine_repo_selection,
                 "manually add a new repository": manually_add_new_repo,
                 "remove a repository": remove_repo_selection,
