@@ -131,6 +131,14 @@ def force_quit(context):
     return handler
 
 
+def clear_work_queue(target):   # pylint: disable=unused-argument
+    """
+    Remove the current workload to reset
+    """
+    key = "multiworker_workload"
+    set_json_value(key, [])
+
+
 def main(target):
     """
     Main task should load from storage, update the workload and pass off
