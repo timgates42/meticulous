@@ -44,7 +44,7 @@ class NonwordState:  # pylint: disable=too-few-public-methods
 
 def processrepo_handlers():
     """
-    Add mutliqueue handlers for processing a repository
+    Add handlers for processing a repository
     """
     return {"collect_nonwords": collect_nonwords, "nonword_update": nonword_update}
 
