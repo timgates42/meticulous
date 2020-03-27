@@ -19,15 +19,23 @@ def update_workload(workload):
     """
     Ensure the minimum number of repository tasks are present.
     """
+    print("Initial workload:")
+    pprint.pprint(workload)
     result = list(workload)
+    actions = {"cleanup"}
+    actions.update(addrepo_handlers().keys())
+    actions.update(processrepo_handlers().keys())
+    actions.update(submit_handlers().keys())
     load_count = count_names(workload, {"repository_load"})
-    active_count = len(get_json_value("repository_map", {}))
-    for _ in range(4 - active_count - load_count):
+    print(f"Load Count: {load_count}")
+    for _ in range(4 - load_count):
         result.append({"interactive": True, "name": "repository_load", "priority": 5})
     if count_names(workload, {"wait_threadpool"}) < 1:
         result.append({"interactive": True, "name": "wait_threadpool", "priority": 999})
     if count_names(workload, {"force_quit"}) < 1:
         result.append({"interactive": True, "name": "force_quit", "priority": 1000})
+    print("New workload:")
+    pprint.pprint(result)
     return result
 
 
@@ -60,8 +68,7 @@ def get_handlers():
 
 def cleanup(context):
     """
-    Task to collect nonwords from a repository until a typo is found or the
-    repository is clean
+    Task to remove a repository after processing
     """
 
     def handler():
