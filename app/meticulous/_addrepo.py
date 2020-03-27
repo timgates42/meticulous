@@ -45,12 +45,17 @@ def repository_load(context):
     def handler():
         reponame = interactive_pickrepo()
         if reponame is None:
+            print("No more repositories to examine.")
             context.controller.add(
                 {"name": "prompt_quit", "interactive": True, "priority": 65}
             )
         else:
             context.controller.add(
-                {"name": "repository_checkout", "interactive": False, "reponame": reponame}
+                {
+                    "name": "repository_checkout",
+                    "interactive": False,
+                    "reponame": reponame,
+                }
             )
 
     return handler
