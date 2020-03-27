@@ -24,8 +24,9 @@ from meticulous._input import (
     make_choice,
     make_simple_choice,
 )
-from meticulous._multiworker import clear_work_queue, show_work_queue
+from meticulous._multiworker import clear_work_queue
 from meticulous._multiworker import main as multiworker_main
+from meticulous._multiworker import show_work_queue
 from meticulous._nonword import load_recent_non_words
 from meticulous._processrepo import interactive_task_collect_nonwords
 from meticulous._storage import get_json_value, prepare, set_json_value
