@@ -24,7 +24,9 @@ from meticulous._input import (
     make_choice,
     make_simple_choice,
 )
+from meticulous._multiworker import clear_work_queue
 from meticulous._multiworker import main as multiworker_main
+from meticulous._multiworker import show_work_queue
 from meticulous._nonword import load_recent_non_words
 from meticulous._processrepo import interactive_task_collect_nonwords
 from meticulous._storage import get_json_value, prepare, set_json_value
@@ -97,7 +99,9 @@ def manual_menu(target):
         try:
             lookup = {
                 "automated process": automated_process,
-                "automated work queue": automated_work_queue,
+                "automated work queue": multiworker_main,
+                "clear work queue": clear_work_queue,
+                "show work queue": show_work_queue,
                 "examine a repository": examine_repo_selection,
                 "manually add a new repository": manually_add_new_repo,
                 "remove a repository": remove_repo_selection,
@@ -219,14 +223,7 @@ def add_new_repo(target):
     if option is None:
         return
     for _ in range(int(option)):
-        add_one_new_repo(target)
-
-
-def add_one_new_repo(target):
-    """
-    Locate a new repository and add it to the available set.
-    """
-    return interactive_add_one_new_repo(target)
+        interactive_add_one_new_repo(target)
 
 
 def automated_process(target):  # pylint: disable=unused-argument
@@ -239,13 +236,6 @@ def automated_process(target):  # pylint: disable=unused-argument
         [task_add_repo, task_collect_nonwords, task_submit, task_cleanup]
     )
     my_engine.process([State(target)])
-
-
-def automated_work_queue(target):  # pylint: disable=unused-argument
-    """
-    Run the multi task work queue
-    """
-    multiworker_main(target)
 
 
 class State:  # pylint: disable=too-few-public-methods
@@ -264,7 +254,7 @@ def task_add_repo(obj, eng):  # pylint: disable=unused-argument
     key = "repository_map"
     repository_list = get_json_value(key, {})
     if not repository_list:
-        add_one_new_repo(obj.target)
+        interactive_add_one_new_repo(obj.target)
 
 
 def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument

@@ -2,6 +2,8 @@
 Load, save and pass off handling to the controller
 """
 
+import pprint
+
 from meticulous._addrepo import addrepo_handlers
 from meticulous._cleanup import remove_repo_for
 from meticulous._controller import Controller
@@ -129,6 +131,22 @@ def force_quit(context):
         context.controller.quit()
 
     return handler
+
+
+def clear_work_queue(target):  # pylint: disable=unused-argument
+    """
+    Remove the current workload to reset
+    """
+    key = "multiworker_workload"
+    set_json_value(key, [])
+
+
+def show_work_queue(target):  # pylint: disable=unused-argument
+    """
+    Dispay the current workload queue
+    """
+    key = "multiworker_workload"
+    pprint.pprint(get_json_value(key, deflt=[]))
 
 
 def main(target):
