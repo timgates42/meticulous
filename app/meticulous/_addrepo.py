@@ -48,9 +48,10 @@ def repository_load(context):
             context.controller.add(
                 {"name": "prompt_quit", "interactive": True, "priority": 65}
             )
-        context.controller.add(
-            {"name": "repository_checkout", "interactive": False, "reponame": reponame}
-        )
+        else:
+            context.controller.add(
+                {"name": "repository_checkout", "interactive": False, "reponame": reponame}
+            )
 
     return handler
 
