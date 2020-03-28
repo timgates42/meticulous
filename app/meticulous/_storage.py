@@ -6,6 +6,7 @@ import json
 import pathlib
 import sqlite3
 import sys
+import threading
 
 
 def prepare():
@@ -71,6 +72,8 @@ def get_db():
     """
     Connect to the database
     """
+    if getattr(threading.local(), "worker", False):
+        raise Exception("Workers prevented from DB access")
     dbpath = get_basedir() / "sqlite.db"
     return sqlite3.connect(str(dbpath))
 

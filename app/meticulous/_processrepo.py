@@ -5,6 +5,7 @@ Work through nonwords to find a typo
 import io
 import json
 import re
+import sys
 from pathlib import Path
 from urllib.parse import quote
 
@@ -124,6 +125,9 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
     repodir = repository_map[reponame]
     repodirpath = Path(repodir)
     jsonpath = repodirpath / "spelling.json"
+    if not jsonpath.is_file():
+        print(f"Unable to locate spelling at {jsonpath}", file=sys.stderr)
+        return
     with io.open(jsonpath, "r", encoding="utf-8") as fobj:
         jsonobj = json.load(fobj)
     words = get_sorted_words(jsonobj)

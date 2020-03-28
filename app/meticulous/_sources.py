@@ -12,6 +12,7 @@ from meticulous._storage import get_value, set_value
 SOURCE_MARKDOWN_URLS = [
     "https://raw.githubusercontent.com/vinta/awesome-python/master/README.md",
     "https://raw.githubusercontent.com/shahraizali/awesome-django/master/README.md",
+    "https://raw.githubusercontent.com/humiaozuzu/awesome-flask/master/README.md",
 ]
 
 # Organisations or Users who have requested to be excluded from typo fixes
