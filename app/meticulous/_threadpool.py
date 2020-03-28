@@ -5,6 +5,7 @@ Multithread processing to maximize time value of user input
 import collections
 import concurrent.futures
 import logging
+import threading
 
 Context = collections.namedtuple("Context", ["taskjson", "controller"])
 
@@ -37,6 +38,7 @@ class PoolManager:
         """
         Called by a thread in the pool to run the task
         """
+        threading.local().worker = True
         try:
             if self._draining:
                 self._saved.append(taskjson)

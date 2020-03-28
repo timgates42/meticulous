@@ -26,7 +26,7 @@ def update_workload(workload):
     actions.update(addrepo_handlers().keys())
     actions.update(processrepo_handlers().keys())
     actions.update(submit_handlers().keys())
-    load_count = count_names(workload, {"repository_load"})
+    load_count = count_names(workload, actions)
     print(f"Load Count: {load_count}")
     for _ in range(4 - load_count):
         result.append({"interactive": True, "name": "repository_load", "priority": 5})

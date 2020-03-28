@@ -15,7 +15,7 @@ def display_summary(path):
     Include a header and the summary content
     """
     print("=" * 80)
-    print(f"{Fore.YELLOW}{path.name}{Style.RESET_ALL}:")
+    print(f"{Fore.YELLOW}{path}{Style.RESET_ALL}:")
     print("=" * 80)
     display_summary_content(path)
     print("-" * 80)
@@ -41,6 +41,9 @@ def display_repo_intro(path):
     """
     Display READMEs from a repo
     """
+    if not path.is_dir():
+        print(f"Unable to display summary at {path} - no directory.", file=sys.stderr)
+        return
     for fpath in path.iterdir():
         if fpath.name.lower().startswith("readme") and fpath.is_file():
             display_summary(fpath)
