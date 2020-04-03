@@ -164,6 +164,10 @@ def get_sorted_words(jsonobj):
             priority = obj.priority
         order.append(((priority, len(details["files"])), word))
     order.sort(reverse=True)
+    print("-- Candidates Found: --")
+    for (priority, num_files), word in order:
+        print(f"{word} (priority: {priority} # files: {num_files})")
+    print("-- End of candidates. --")
     return [word for _, word in order]
 
 
