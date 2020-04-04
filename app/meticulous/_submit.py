@@ -28,7 +28,7 @@ def submit_handlers():
     """
     Obtain multithread task handlers for submission.
     """
-    return {"submit": submit, "plain_pr": plain_pr}
+    return {"submit": submit, "plain_pr": plain_pr, "full_pr": full_pr}
 
 
 def submit(context):
@@ -42,18 +42,24 @@ def submit(context):
         repository_saves = get_json_value("repository_saves", {})
         if reponame in repository_saves:
             reposave = repository_saves[reponame]
-            if check_if_plain_pr(reponame, reposave):
-                context.controller.add(
-                    {
-                        "name": "plain_pr",
-                        "interactive": False,
-                        "reponame": reponame,
-                        "reposave": reposave,
-                    }
-                )
+            suggest_plain = check_if_plain_pr(reposave)
+            add_word = reposave["add_word"]
+            del_word = reposave["del_word"]
+            file_paths = reposave["file_paths"]
+            files = ", ".join(file_paths)
+            print(f"Fix in {reponame}: {del_word} -> {add_word} over {files}")
+            if suggest_plain:
+                submit_plain = get_confirmation("Analysis suggests plain pr, agree?")
             else:
-                prepare_a_pr_or_issue_for(reponame, reposave)
-                add_cleanup(context, reponame)
+                submit_plain = get_confirmation("Complex repo submit plain pr anyway?")
+            context.controller.add(
+                {
+                    "name": "plain_pr" if submit_plain else "full_pr",
+                    "interactive": False,
+                    "reponame": reponame,
+                    "reposave": reposave,
+                }
+            )
 
     return handler
 
@@ -67,6 +73,20 @@ def plain_pr(context):
         reponame = context.taskjson["reponame"]
         reposave = context.taskjson["reposave"]
         plain_pr_for(reponame, reposave)
+        add_cleanup(context, reponame)
+
+    return handler
+
+
+def full_pr(context):
+    """
+    Non-interactive task to finish off submission of a pr
+    """
+
+    def handler():
+        reponame = context.taskjson["reponame"]
+        reposave = context.taskjson["reposave"]
+        full_pr_for(reponame, reposave)
         add_cleanup(context, reponame)
 
     return handler
@@ -86,13 +106,13 @@ def fast_prepare_a_pr_or_issue_for(reponame, reposave):
     Display a suggestion if the repository looks like it wants an issue and a
     pull request or is happy with just a pull request.
     """
-    if check_if_plain_pr(reponame, reposave):
+    if check_if_plain_pr(reposave):
         plain_pr_for(reponame, reposave)
     else:
         prepare_a_pr_or_issue_for(reponame, reposave)
 
 
-def check_if_plain_pr(reponame, reposave):
+def check_if_plain_pr(reposave):
     """
     Display a suggestion if the repository looks like it wants an issue and a
     pull request or is happy with just a pull request.
@@ -107,13 +127,7 @@ def check_if_plain_pr(reponame, reposave):
     if display_and_check_files(repopath / "CONTRIBUTING.md"):
         suggest_issue = True
     if not suggest_issue:
-        add_word = reposave["add_word"]
-        del_word = reposave["del_word"]
-        file_paths = reposave["file_paths"]
-        files = ", ".join(file_paths)
-        print(f"Fix in {reponame}: {del_word} -> {add_word} over {files}")
-        if get_confirmation("Analysis suggests plain pr, agree?"):
-            return True
+        return True
     return False
 
 
@@ -122,6 +136,15 @@ def plain_pr_for(reponame, reposave):
     Create and submit the standard PR.
     """
     make_a_commit(reponame, reposave, False)
+    non_interactive_submit_commit(reponame, reposave)
+
+
+def full_pr_for(reponame, reposave):
+    """
+    Create and submit the standard PR.
+    """
+    make_issue(reponame, reposave, True)
+    submit_issue(reponame, reposave, None)
     non_interactive_submit_commit(reponame, reposave)
 
 
