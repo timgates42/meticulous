@@ -1,4 +1,4 @@
-- expect found offer quick pr | fallback quick issue pr
+- total annihilation mode
 - other awesome files
  - c
  - cpp
