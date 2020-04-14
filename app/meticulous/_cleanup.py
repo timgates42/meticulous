@@ -2,6 +2,7 @@
 Upon completion cleanup
 """
 
+import os
 import shutil
 
 from meticulous._input import make_simple_choice
@@ -24,4 +25,5 @@ def remove_repo_for(repo, repodir, confirm=True):
     else:
         option = "Yes"
     if option == "Yes":
-        shutil.rmtree(repodir)
+        if os.path.isdir(repodir):
+            shutil.rmtree(repodir)

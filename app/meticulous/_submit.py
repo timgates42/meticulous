@@ -8,7 +8,8 @@ import re
 import sys
 from pathlib import Path
 
-from plumbum import FG, local
+from github import GithubException
+from plumbum import FG, ProcessExecutionError, local
 
 from meticulous._exceptions import ProcessingFailed
 from meticulous._github import create_pr, get_parent_repo
@@ -323,13 +324,18 @@ def non_interactive_submit_commit(reponame, reposave):
     """
     Push up a commit
     """
-    repodir = Path(reposave["repodir"])
-    add_word = reposave["add_word"]
-    commit_path = str(repodir / "__commit__.txt")
-    title, body = load_commit_like_file(commit_path)
-    from_branch, to_branch = push_commit(repodir, add_word)
-    pullreq = create_pr(reponame, title, body, from_branch, to_branch)
-    return f"Created PR #{pullreq.number} view at {pullreq.html_url}"
+    try:
+        repodir = Path(reposave["repodir"])
+        add_word = reposave["add_word"]
+        commit_path = str(repodir / "__commit__.txt")
+        title, body = load_commit_like_file(commit_path)
+        from_branch, to_branch = push_commit(repodir, add_word)
+        pullreq = create_pr(reponame, title, body, from_branch, to_branch)
+        return f"Created PR #{pullreq.number} view at {pullreq.html_url}"
+    except ProcessExecutionError:
+        return f"Failed to commit for {reponame}."
+    except GithubException:
+        return f"Failed to create pr for {reponame}."
 
 
 def push_commit(repodir, add_word):
