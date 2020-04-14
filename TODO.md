@@ -1,3 +1,4 @@
+- total annihilation mode
 - websearch - unusual traffic from your computer
 - other awesome files
  - c
