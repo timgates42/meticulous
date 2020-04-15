@@ -90,6 +90,13 @@ def get_suggestion(word):
         mobj = re.match("Did you mean: (.*)$", text)
         if mobj:
             return check_replacement(word, mobj.group(1))
+        mobj = re.match(
+            f"Showing results for (.*)Search instead for"
+            f" {re.escape(word)}",
+            text
+        )
+        if mobj:
+            return check_replacement(word, mobj.group(1))
     urls = []
     for link in soup.find_all("a"):
         href = link.attrs.get("href")
