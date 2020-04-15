@@ -1,4 +1,5 @@
-- expect found offer quick pr | fallback quick issue pr
+- total annihilation mode
+- websearch - unusual traffic from your computer
 - other awesome files
  - c
  - cpp

@@ -2,6 +2,8 @@
 Test cases for search results
 """
 
+import logging
+
 import pytest
 
 from meticulous._websearch import Suggestion, get_suggestion
@@ -17,11 +19,13 @@ from meticulous._websearch import Suggestion, get_suggestion
         ("cssrewrite", Suggestion(is_nonword=True)),
     ],
 )
-def test_suggestions(word, expected):
+def test_suggestions(caplog, word, expected):
     """
     Test to ensure expected suggestions are obtained
     """
-    # Exercise
-    obtained = get_suggestion(word)
+    # Setup
+    with caplog.at_level(logging.INFO):
+        # Exercise
+        obtained = get_suggestion(word)
     # Verify
     assert obtained == expected  # noqa: S101 # nosec
