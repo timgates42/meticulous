@@ -91,9 +91,7 @@ def get_suggestion(word):
         if mobj:
             return check_replacement(word, mobj.group(1))
         mobj = re.match(
-            f"Showing results for (.*)Search instead for"
-            f" {re.escape(word)}",
-            text
+            f"Showing results for (.*)Search instead for" f" {re.escape(word)}", text
         )
         if mobj:
             return check_replacement(word, mobj.group(1))
