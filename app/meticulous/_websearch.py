@@ -83,7 +83,7 @@ def get_suggestion(word):
     soup = BeautifulSoup(requests.get(search).text, features="lxml")
     for div in soup.find_all("div"):
         text = div.get_text()
-        logging.log(1, "Examining div text: %s", text)
+        logging.info("Examining div text: %s", text)
         mobj = re.match("Showing results for ([^(]+)[(]", text)
         if mobj:
             return check_replacement(word, mobj.group(1))
@@ -95,7 +95,7 @@ def get_suggestion(word):
         href = link.attrs.get("href")
         if not href:
             continue
-        logging.log(1, "Examining url href: %s", href)
+        logging.info("Examining url href: %s", href)
         mobj = re.match("[/]url[?]q=([^&#]+)[&#]", href)
         if not mobj:
             continue
