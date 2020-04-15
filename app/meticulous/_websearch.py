@@ -83,18 +83,9 @@ def get_suggestion(word):
     soup = BeautifulSoup(requests.get(search).text, features="lxml")
     for div in soup.find_all("div"):
         text = div.get_text()
-        logging.info("Examining div text: %s", text)
-        mobj = re.match("Showing results for ([^(]+)[(]", text)
-        if mobj:
-            return check_replacement(word, mobj.group(1))
-        mobj = re.match("Did you mean: (.*)$", text)
-        if mobj:
-            return check_replacement(word, mobj.group(1))
-        mobj = re.match(
-            f"Showing results for (.*)Search instead for" f" {re.escape(word)}", text
-        )
-        if mobj:
-            return check_replacement(word, mobj.group(1))
+        result = get_suggestion_for_divtext(word, text)
+        if result is not None:
+            return result
     urls = []
     for link in soup.find_all("a"):
         href = link.attrs.get("href")
@@ -113,6 +104,26 @@ def get_suggestion(word):
         for dicturl in DICTIONARIES:
             if url == f"{dicturl}{word}":
                 return Suggestion(is_nonword=True)
+    return None
+
+
+def get_suggestion_for_divtext(word, text):
+    """
+    Consider the provided text from a div in a search result
+    look for a spelling suggestion.
+    """
+    logging.info("Examining div text: %s", text)
+    mobj = re.match("Showing results for ([^(]+)[(]", text)
+    if mobj:
+        return check_replacement(word, mobj.group(1))
+    mobj = re.match("Did you mean: (.*)$", text)
+    if mobj:
+        return check_replacement(word, mobj.group(1))
+    mobj = re.match(
+        f"Showing results for (.*)Search instead for" f" {re.escape(word)}", text
+    )
+    if mobj:
+        return check_replacement(word, mobj.group(1))
     return None
 
 
