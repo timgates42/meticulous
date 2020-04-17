@@ -146,7 +146,7 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
         except HaltProcessing:
             if state.done:
                 return
-    print(f"{Fore.YELLOW}Completed checking all words!{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Completed checking all words for {reponame}!{Style.RESET_ALL}")
 
 
 def get_sorted_words(jsonobj):
