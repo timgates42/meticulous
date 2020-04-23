@@ -113,7 +113,7 @@ def interactive_nonword_delegate(target):
 
 
 def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
-    reponame, target, nonword_delegate=None
+    reponame, target, nonword_delegate=None, nonstop=False,
 ):
     """
     Saves nonwords until a typo is found
@@ -144,7 +144,7 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
         try:
             my_engine.process([state])
         except HaltProcessing:
-            if state.done:
+            if state.done and not nonstop:
                 return
     print(f"{Fore.YELLOW}Completed checking all words for {reponame}!{Style.RESET_ALL}")
 

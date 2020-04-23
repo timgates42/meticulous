@@ -2,6 +2,8 @@
 Handlers for checking existing forks and creating new ones.
 """
 
+import logging
+
 import github
 from plumbum import local
 
@@ -118,7 +120,12 @@ def get_parent_repo(reponame):
     """
     api = get_api()
     user_org = api.get_user().login
-    repo = api.get_repo(f"{user_org}/{reponame}")
+    orgrepo = f"{user_org}/{reponame}"
+    try:
+        repo = api.get_repo(orgrepo)
+    except github.GithubException:
+        logging.exception("Failed to lookup %s", orgrepo)
+        raise
     while repo.parent and not repo.parent.archived:
         repo = repo.parent
     return repo

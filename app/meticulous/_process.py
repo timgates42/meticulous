@@ -12,10 +12,9 @@ import unanimous.util
 import unanimous.version
 from colorama import Fore, Style, init
 from plumbum import FG, local
-from spelling.store import get_store
 from workflow.engine import GenericWorkflowEngine
 
-from meticulous._addrepo import interactive_add_one_new_repo
+from meticulous._addrepo import interactive_add_one_new_repo, spelling_check
 from meticulous._cleanup import remove_repo_for
 from meticulous._exceptions import NoRepoException, ProcessingFailed
 from meticulous._input import (
@@ -108,7 +107,7 @@ def manual_menu(target):
                 "add a new repository": add_new_repo,
                 "prepare a change": prepare_a_change,
                 "prepare a pr/issue": prepare_a_pr_or_issue,
-                "show statistics": show_statistics,
+                "total annihilation": total_annihilation,
             }
             handler = make_choice(lookup)
             if handler is None:
@@ -119,14 +118,16 @@ def manual_menu(target):
             continue
 
 
-def show_statistics(target):
+def total_annihilation(target):
     """
-    Display details about the most common words
+    Remove all spelling mistakes from a repository
     """
-    storage_path = get_spelling_store_path(target)
-    store = get_store(storage_path)
-    word_count = store.load_word_count()
-    print(repr(word_count))
+    reponame, repodir = pick_repo()
+    jsonpath = Path(repodir) / "spelling.json"
+    if not jsonpath.exists():
+        print("Checking spelling...")
+        spelling_check(repodir, target)
+    interactive_task_collect_nonwords(reponame, target, nonstop=True)
 
 
 def remove_repo_selection(target):  # pylint: disable=unused-argument
