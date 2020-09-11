@@ -82,7 +82,7 @@ def get_store_dir():
     Locate the storage directory of this project
     """
     apppath = pathlib.Path.home() / ".meticulous"
-    if not apppath.isdir():
+    if not apppath.is_dir():
         apppath.mkdir()
     return apppath
 
