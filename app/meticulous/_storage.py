@@ -5,7 +5,6 @@ Record current progress to avoid reprocessing
 import json
 import pathlib
 import sqlite3
-import sys
 import threading
 
 
@@ -74,16 +73,18 @@ def get_db():
     """
     if getattr(threading.local(), "worker", False):
         raise Exception("Workers prevented from DB access")
-    dbpath = get_basedir() / "sqlite.db"
+    dbpath = get_store_dir() / "sqlite.db"
     return sqlite3.connect(str(dbpath))
 
 
-def get_basedir():
+def get_store_dir():
     """
-    Locate the root directory of this project
+    Locate the storage directory of this project
     """
-    this_py_path = pathlib.Path(sys.modules[__name__].__file__)
-    return this_py_path.absolute().parent.parent
+    apppath = pathlib.Path.home() / ".meticulous"
+    if not apppath.isdir():
+        apppath.mkdir()
+    return apppath
 
 
 if __name__ == "__main__":
