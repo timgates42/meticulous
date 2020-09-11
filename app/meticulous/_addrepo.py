@@ -103,7 +103,7 @@ def repository_summary(context):
                 "reponame": reponame,
             }
         )
-        if get_confirmation(f"Do you want to quit?"):
+        if get_confirmation("Do you want to quit?"):
             context.controller.quit()
 
     return handler
