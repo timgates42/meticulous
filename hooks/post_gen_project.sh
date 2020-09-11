@@ -15,6 +15,7 @@ git checkout -- \
  app/tests \
  app/.gitignore \
  docs \
- NEWS.rst
+ NEWS.rst \
+ TODO.md
 
 rm -rf app/pip/2.7 app/pip/3.5

@@ -113,7 +113,7 @@ def interactive_nonword_delegate(target):
 
 
 def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
-    reponame, target, nonword_delegate=None, nonstop=False,
+    reponame, target, nonword_delegate=None, nonstop=False
 ):
     """
     Saves nonwords until a typo is found

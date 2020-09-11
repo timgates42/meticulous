@@ -62,7 +62,7 @@ def check_table_exists(con, table_name):
     """
     Look in the database to see if table exists
     """
-    sql = "SELECT name FROM sqlite_master WHERE" " type='table' AND name=?"
+    sql = "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
     for _ in con.execute(sql, (table_name,)):
         return True
     return False

@@ -46,5 +46,6 @@
     "entry_points": "",
     "package_data": "",
     "extra_manifest": "",
-    "test_requires": ""
+    "test_requires": "",
+    "latest_python": "3.8"
 }
