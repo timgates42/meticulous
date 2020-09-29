@@ -255,7 +255,7 @@ def make_a_commit(reponame, reposave, is_full):  # pylint: disable=unused-argume
     with io.open(commit_path, "w", encoding="utf-8") as fobj:
         print(
             f"""\
-docs: Fix simple typo, {del_word} -> {add_word}
+docs: fix simple typo, {del_word} -> {add_word}
 
 There is a small typo in {files}.
 
@@ -281,7 +281,7 @@ def submit_issue(reponame, reposave, ctxt):  # pylint: disable=unused-argument
     with io.open(commit_path, "w", encoding="utf-8") as fobj:
         print(
             f"""\
-docs: Fix simple typo, {del_word} -> {add_word}
+docs: fix simple typo, {del_word} -> {add_word}
 
 There is a small typo in {files}.
 
