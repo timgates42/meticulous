@@ -35,6 +35,7 @@ from meticulous._submit import (
     prepare_a_pr_or_issue_for,
 )
 from meticulous._util import get_editor
+from meticulous._webserver import main as webserver_main
 
 
 def get_spelling_store_path(target):
@@ -63,7 +64,9 @@ def run_invocation(target):
     load_recent_non_words(target)
     validate_versions()
     try:
-        if get_confirmation("Run automated multi-queue processing?"):
+        if get_confirmation("Run webserver?"):
+            webserver_main(target)
+        elif get_confirmation("Run automated multi-queue processing?"):
             multiworker_main(target)
         else:
             manual_menu(target)

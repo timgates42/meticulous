@@ -7,6 +7,8 @@ import pathlib
 import sqlite3
 import threading
 
+import psycopg2
+
 
 def prepare():
     """
@@ -71,6 +73,10 @@ def get_db():
     """
     Connect to the database
     """
+    try:
+        return psycopg2.connect(dbname="meticuloous")
+    except psycopg2.OperationalError:
+        pass
     if getattr(threading.local(), "worker", False):
         raise Exception("Workers prevented from DB access")
     dbpath = get_store_dir() / "sqlite.db"
