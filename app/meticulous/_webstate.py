@@ -3,7 +3,7 @@ Stores the current input requirement for the web requests to await their arrival
 """
 
 import datetime
-from threading import Condition
+from threading import Condition, Thread
 
 from flask import escape
 
@@ -25,6 +25,7 @@ class StateHandler(Interaction):
         self.messages = []
         self.await_key = None
         self.response_val = None
+        self.thread = None
 
     def response(self):
         """
@@ -36,6 +37,15 @@ class StateHandler(Interaction):
         """
         Begin processing
         """
+        if self.thread is not None:
+            self.stop()
+        self.thread = Thread(target=self.run, args=(target,), name="webworker")
+        self.thread.start()
+
+    def run(self, target):
+        """
+        Perform processing
+        """
         self.started_at = datetime.datetime.now()
         self.alive = True
         while self.alive:
@@ -46,6 +56,8 @@ class StateHandler(Interaction):
         Gracefully stop processing
         """
         self.alive = False
+        self.thread.join()
+        self.thread = None
         self.started_at = datetime.datetime.min
 
     def get_input(self, message):
