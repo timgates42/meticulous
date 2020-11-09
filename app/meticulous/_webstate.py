@@ -33,7 +33,7 @@ class StateHandler(Interaction):
         Return the current input requirement to the end user
         """
         conv = Ansi2HTMLConverter()
-        content = "<br/>".join(conv.convert(msg) for msg in self.messages)
+        content = "".join(conv.convert(msg) for msg in self.messages)
         return f"<html><body>{content}</body></html>"
 
     def start(self, target):
@@ -64,13 +64,13 @@ class StateHandler(Interaction):
         self.started_at = datetime.datetime.min
 
     def get_input(self, message):
-        return self.get_await((INPUT, message))
+        return self.get_await((INPUT, (message,))
 
     def check_quit(self):
         return True
 
     def get_confirmation(self, message="Do you want to continue", defaultval=True):
-        return self.get_await((CONFIRMATION, message, defaultval))
+        return self.get_await((CONFIRMATION, (message, defaultval)))
 
     def get_await(self, key):
         """
