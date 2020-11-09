@@ -5,6 +5,7 @@ Stores the current input requirement for the web requests to await their arrival
 import datetime
 from threading import Condition, Thread
 
+from ansi2html import Ansi2HTMLConverter
 from flask import escape
 
 from meticulous._multiworker import Interaction, multiworker_core
@@ -31,7 +32,9 @@ class StateHandler(Interaction):
         """
         Return the current input requirement to the end user
         """
-        return f"<html><body>{escape(repr(self.messages))}</body></html>"
+        conv = Ansi2HTMLConverter()
+        content = "<br/>".join(conv.convert(msg) for msg in self.messages)
+        return f"<html><body>{content}</body></html>"
 
     def start(self, target):
         """
