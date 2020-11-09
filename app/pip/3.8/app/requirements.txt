@@ -8,3 +8,4 @@ requests
 workflow
 colorama
 psycopg2
+ansi2html
