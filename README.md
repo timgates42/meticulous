@@ -39,6 +39,7 @@ $ pip install meticulous
 - requests
 - workflow
 - colorama
+- psycopg2
 
 
 ## Download from PyPI.org

@@ -7,3 +7,4 @@ PyInquirer
 requests
 workflow
 colorama
+psycopg2
