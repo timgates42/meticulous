@@ -6,8 +6,6 @@ import datetime
 from threading import Condition, Thread
 
 from ansi2html import Ansi2HTMLConverter
-from flask import escape
-
 from meticulous._multiworker import Interaction, multiworker_core
 
 INPUT = 0
@@ -34,6 +32,8 @@ class StateHandler(Interaction):
         """
         conv = Ansi2HTMLConverter()
         content = "".join(conv.convert(msg) for msg in self.messages)
+        if self.await_key is not None:
+            content += self.await_key.get_html()
         return f"<html><body>{content}</body></html>"
 
     def start(self, target):
@@ -64,13 +64,13 @@ class StateHandler(Interaction):
         self.started_at = datetime.datetime.min
 
     def get_input(self, message):
-        return self.get_await((INPUT, (message,))
+        return self.get_await(Input(message))
 
     def check_quit(self):
         return True
 
     def get_confirmation(self, message="Do you want to continue", defaultval=True):
-        return self.get_await((CONFIRMATION, (message, defaultval)))
+        return self.get_await(Confirmation(message, defaultval))
 
     def get_await(self, key):
         """
@@ -85,6 +85,53 @@ class StateHandler(Interaction):
 
     def send(self, message):
         self.messages.append(message)
+
+
+class Awaiter:
+    """
+    Waiting on some user input
+    """
+
+    def get_html(self):
+        """
+        Obtain the request HTML
+        """
+        raise NotImplementedError()
+
+
+class Confirmation(Awaiter):
+    """
+    Yes/No
+    """
+
+    def __init__(self, message, defaultval):
+        self.message = message
+        self.defaultval = defaultval
+
+    def get_html(self):
+        """
+        Obtain the request HTML
+        """
+        conv = Ansi2HTMLConverter()
+        content = conv.convert(self.message)
+        return content
+
+
+class Input(Awaiter):
+    """
+    Text Input
+    """
+
+    def __init__(self, message):
+        self.message = message
+
+    def get_html(self):
+        """
+        Obtain the request HTML
+        """
+        conv = Ansi2HTMLConverter()
+        content = conv.convert(self.message)
+        return content
 
 
 STATE = StateHandler()
