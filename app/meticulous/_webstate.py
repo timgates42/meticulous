@@ -3,9 +3,11 @@ Stores the current input requirement for the web requests to await their arrival
 """
 
 import datetime
+import uuid
 from threading import Condition, Thread
 
 from ansi2html import Ansi2HTMLConverter
+
 from meticulous._multiworker import Interaction, multiworker_core
 
 INPUT = 0
@@ -92,6 +94,20 @@ class Awaiter:
     Waiting on some user input
     """
 
+    def __init__(self):
+        self.uuid = uuid.uuid4()
+
+    def get_form(self, content):
+        """
+        Get form submission html
+        """
+        return f"""
+<form method="POST">
+<input type="hidden" name="uuid" value="{self.uuid}">
+{content}
+</form>
+"""
+
     def get_html(self):
         """
         Obtain the request HTML
@@ -105,6 +121,7 @@ class Confirmation(Awaiter):
     """
 
     def __init__(self, message, defaultval):
+        super().__init__()
         self.message = message
         self.defaultval = defaultval
 
@@ -114,6 +131,14 @@ class Confirmation(Awaiter):
         """
         conv = Ansi2HTMLConverter()
         content = conv.convert(self.message)
+        buttons = """
+<table><tr><td>
+<input type="submit" value="Yes" />
+</td><td>
+<input type="submit" value="No" />
+</td></tr></table>
+"""
+        content += self.get_form(buttons)
         return content
 
 
@@ -123,6 +148,7 @@ class Input(Awaiter):
     """
 
     def __init__(self, message):
+        super().__init__()
         self.message = message
 
     def get_html(self):
@@ -131,6 +157,11 @@ class Input(Awaiter):
         """
         conv = Ansi2HTMLConverter()
         content = conv.convert(self.message)
+        textinput = """
+<input type="text" name="textinput" value="" />
+<input type="submit" value="Save" />
+"""
+        content += self.get_form(textinput)
         return content
 
 
