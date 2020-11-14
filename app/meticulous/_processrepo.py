@@ -131,6 +131,11 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
     with io.open(jsonpath, "r", encoding="utf-8") as fobj:
         jsonobj = json.load(fobj)
     words = get_sorted_words(jsonobj)
+    processrepo = get_confirmation(
+        "Do you want to process this repository?", defaultval=True
+    )
+    if not processrepo:
+        return
     my_engine = GenericWorkflowEngine()
     my_engine.callbacks.replace([check_websearch, is_nonword, is_typo, what_now])
     for word in words:
