@@ -132,7 +132,30 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
         return
     with io.open(jsonpath, "r", encoding="utf-8") as fobj:
         jsonobj = json.load(fobj)
+    complete = interactive_task_collect_nonwords_run(
+        context, repodirpath, target, nonstop, nonword_delegate, jsonobj
+    )
+    if complete:
+        context.interaction.send(
+            f"{Fore.YELLOW}Completed checking all"
+            f" words for {reponame}!{Style.RESET_ALL}"
+        )
+
+
+def interactive_task_collect_nonwords_run(
+    context, repodirpath, target, nonstop, nonword_delegate, jsonobj
+):
+    """
+    Given the json state - saves nonwords until a typo is found
+    """
     words = get_sorted_words(context.interaction, jsonobj)
+    if not words:
+        return True
+    processrepo = context.interaction.get_confirmation(
+        "Do you want to process this repository?", defaultval=True
+    )
+    if not processrepo:
+        return False
     my_engine = GenericWorkflowEngine()
     my_engine.callbacks.replace([check_websearch, is_nonword, is_typo, what_now])
     for word in words:
@@ -148,10 +171,8 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
             my_engine.process([state])
         except HaltProcessing:
             if state.done and not nonstop:
-                return
-    context.interaction.send(
-        f"{Fore.YELLOW}Completed checking all words for {reponame}!{Style.RESET_ALL}"
-    )
+                return False
+    return True
 
 
 def get_sorted_words(interaction, jsonobj):
