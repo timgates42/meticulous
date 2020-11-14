@@ -41,6 +41,13 @@ class StateHandler(Interaction):
             content = "".join(conv.convert(msg) for msg in self.messages)
             if self.await_key is not None:
                 content += self.await_key.get_html()
+            else:
+                content += """
+No interaction required yet, will reload.
+<script>
+location.reload()
+</script>
+"""
         return f"<html><body>{content}</body></html>"
 
     def start(self, target):
@@ -99,6 +106,7 @@ class StateHandler(Interaction):
         """
         with self.condition:
             self.response_val = val
+            del self.messages[:]
             self.condition.notify()
 
 
@@ -126,7 +134,12 @@ class Awaiter:
         """
         Request reloading after a short duration of processing
         """
-        return "Submission recorded, please reload."
+        return """
+Submission recorded, page will reload.
+<script>
+location.reload();
+</script>
+"""
 
     def handle(self, state):
         """
