@@ -106,7 +106,7 @@ location.reload()
         """
         with self.condition:
             self.response_val = val
-            del self.messages[:]
+            del self.messages[:-20]
             self.condition.notify()
 
 
