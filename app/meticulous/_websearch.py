@@ -2,8 +2,11 @@
 Use the internet to determine if the provided word is a nonword or a typo
 """
 
+import datetime
 import logging
+import random
 import re
+import threading
 from urllib.parse import quote, unquote
 
 import requests
@@ -75,10 +78,40 @@ MISSPELLINGS = [
 ]
 
 
+class GoogleLock:
+    """
+    Record google query times and avoid flooding google
+    """
+
+    def __init__(self):
+        self.lock = threading.Condition()
+        self.update = datetime.datetime.now()
+
+    @staticmethod
+    def get_google_delay():
+        """
+        Randomized delay
+        """
+        return datetime.timedelta(seconds=2 + (random.SystemRandom().random() * 3))
+
+    def avoid_google_wrath(self):
+        """
+        Google is nonplussed about being flooded by queries so ensure we do not
+        query excessively frequently
+        """
+        with self.lock:
+            now = datetime.datetime.now()
+            delay = (self.update + self.get_google_delay() - now).total_seconds()
+            if delay > 0:
+                self.lock.wait(delay)
+            self.update = datetime.datetime.now()
+
+
 def get_suggestion(word):
     """
     Use the internet to determine if the provided word is a nonword or a typo
     """
+    GOOGLE_LOCK.avoid_google_wrath()
     search = f"https://www.google.com.au/search?q={quote(word)}"
     soup = BeautifulSoup(requests.get(search).text, features="lxml")
     for div in soup.find_all("div"):
@@ -136,6 +169,8 @@ def check_replacement(word, replacement):
         return Suggestion(is_nonword=True)
     return Suggestion(is_typo=True, replacement=replacement)
 
+
+GOOGLE_LOCK = GoogleLock()
 
 if __name__ == "__main__":
     print(get_suggestion("altnernatives"))
