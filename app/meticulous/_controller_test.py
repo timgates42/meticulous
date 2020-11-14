@@ -6,6 +6,7 @@ import threading
 
 from meticulous._controller import Controller
 from meticulous._input_queue import get_input_queue
+from meticulous._multiworker import KeyboardInteraction
 from meticulous._threadpool import get_pool
 
 
@@ -84,7 +85,8 @@ def test_user_shutdown():
     nexttask = {"interactive": True, "priority": 2, "name": "1"}
     controller.add(task)
     controller.add(nexttask)
+    interaction = KeyboardInteraction()
     # Exercise
-    result = controller.run()
+    result = controller.run(interaction)
     # Verify
     assert result == [nexttask]  # noqa=S101 # nosec
