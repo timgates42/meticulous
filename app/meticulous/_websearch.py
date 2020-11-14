@@ -92,7 +92,7 @@ class GoogleLock:
         """
         Randomized delay
         """
-        return 2 + (random.SystemRandom().random() * 3)
+        return datetime.timedelta(seconds=2 + (random.SystemRandom().random() * 3))
 
     def avoid_google_wrath(self):
         """
