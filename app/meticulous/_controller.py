@@ -5,7 +5,7 @@ Manager user input and background tasks
 import collections
 import threading
 
-Context = collections.namedtuple("Context", ["controller", "taskjson"])
+Context = collections.namedtuple("Context", ["controller", "taskjson", "interaction"])
 
 
 class Controller:
@@ -68,23 +68,23 @@ class Controller:
         """
         self._threadpool.__exit__(type, value, traceback)
 
-    def run(self):
+    def run(self, interaction):
         """
         Pull off interactive tasks one at a time until the user quits and then
         save the state.
         """
         with self:
             while self._running:
-                self.handle_input()
+                self.handle_input(interaction)
         return self.save()
 
-    def handle_input(self):
+    def handle_input(self, interaction):
         """
         Process one input task
         """
         task = self._input_queue.pop()
         factory = self._handlers[task["name"]]
-        context = Context(controller=self, taskjson=task)
+        context = Context(controller=self, taskjson=task, interaction=interaction)
         handler = factory(context)
         return handler()
 

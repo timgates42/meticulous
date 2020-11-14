@@ -13,12 +13,7 @@ from plumbum import FG, ProcessExecutionError, local
 
 from meticulous._exceptions import ProcessingFailed
 from meticulous._github import create_pr, get_parent_repo
-from meticulous._input import (
-    UserCancel,
-    get_confirmation,
-    make_choice,
-    make_simple_choice,
-)
+from meticulous._input import UserCancel, make_choice, make_simple_choice
 from meticulous._processrepo import add_repo_save
 from meticulous._storage import get_json_value
 from meticulous._summary import display_and_check_files
@@ -48,11 +43,17 @@ def submit(context):
             del_word = reposave["del_word"]
             file_paths = reposave["file_paths"]
             files = ", ".join(file_paths)
-            print(f"Fix in {reponame}: {del_word} -> {add_word} over {files}")
+            context.interaction.send(
+                f"Fix in {reponame}: {del_word} -> {add_word} over {files}"
+            )
             if suggest_plain:
-                submit_plain = get_confirmation("Analysis suggests plain pr, agree?")
+                submit_plain = context.interaction.get_confirmation(
+                    "Analysis suggests plain pr, agree?"
+                )
             else:
-                submit_plain = get_confirmation("Complex repo submit plain pr anyway?")
+                submit_plain = context.interaction.get_confirmation(
+                    "Complex repo submit plain pr anyway?"
+                )
             context.controller.add(
                 {
                     "name": "plain_pr" if submit_plain else "full_pr",
@@ -255,7 +256,7 @@ def make_a_commit(reponame, reposave, is_full):  # pylint: disable=unused-argume
     with io.open(commit_path, "w", encoding="utf-8") as fobj:
         print(
             f"""\
-docs: Fix simple typo, {del_word} -> {add_word}
+docs: fix simple typo, {del_word} -> {add_word}
 
 There is a small typo in {files}.
 
@@ -281,7 +282,7 @@ def submit_issue(reponame, reposave, ctxt):  # pylint: disable=unused-argument
     with io.open(commit_path, "w", encoding="utf-8") as fobj:
         print(
             f"""\
-docs: Fix simple typo, {del_word} -> {add_word}
+docs: fix simple typo, {del_word} -> {add_word}
 
 There is a small typo in {files}.
 

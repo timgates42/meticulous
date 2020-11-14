@@ -4,10 +4,10 @@ Load, save and pass off handling to the controller
 
 import pprint
 
+from meticulous import _input
 from meticulous._addrepo import addrepo_handlers
 from meticulous._cleanup import remove_repo_for
 from meticulous._controller import Controller
-from meticulous._input import get_confirmation
 from meticulous._input_queue import get_input_queue
 from meticulous._processrepo import processrepo_handlers
 from meticulous._storage import get_json_value, set_json_value
@@ -119,7 +119,7 @@ def prompt_quit(context):
     """
 
     def handler():
-        if get_confirmation(message="Do you want to quit?", defaultval=True):
+        if context.interaction.check_quit():
             context.controller.quit()
         else:
             context.controller.add(
@@ -156,10 +156,65 @@ def show_work_queue(target):  # pylint: disable=unused-argument
     pprint.pprint(get_json_value(key, deflt=[]))
 
 
+class Interaction:
+    """
+    Base kinds of interaction
+    """
+
+    def get_confirmation(self, message="Do you want to continue", defaultval=True):
+        """
+        Simple confirmation
+        """
+        raise NotImplementedError()
+
+    def get_input(self, message):
+        """
+        Get arbitrary text input
+        """
+        raise NotImplementedError()
+
+    def check_quit(self):
+        """
+        Check if time to quit
+        """
+        raise NotImplementedError()
+
+    def send(self, message):
+        """
+        Display a message to the user
+        """
+        raise NotImplementedError()
+
+
+class KeyboardInteraction(Interaction):
+    """
+    Terminal keyboard interaction
+    """
+
+    def get_input(self, message):
+        return _input.get_input(message=message)
+
+    def check_quit(self):
+        return _input.get_confirmation(message="Do you want to quit?", defaultval=True)
+
+    def get_confirmation(self, message="Do you want to continue", defaultval=True):
+        return _input.get_confirmation(message=message, defaultval=defaultval)
+
+    def send(self, message):
+        print(message)
+
+
 def main(target):
     """
     Main task should load from storage, update the workload and pass off
     handling to the controller and on termination save the result
+    """
+    multiworker_core(KeyboardInteraction(), target)
+
+
+def multiworker_core(interaction, target):
+    """
+    Support for different kinds of interaction with multiworker processing
     """
     key = "multiworker_workload"
     workload = get_json_value(key, deflt=[])
@@ -172,5 +227,5 @@ def main(target):
     )
     for task in workload:
         controller.add(task)
-    result = controller.run()
+    result = controller.run(interaction)
     set_json_value(key, result)

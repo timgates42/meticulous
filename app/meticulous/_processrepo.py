@@ -5,7 +5,6 @@ Work through nonwords to find a typo
 import io
 import json
 import re
-import sys
 from pathlib import Path
 from urllib.parse import quote
 
@@ -15,7 +14,6 @@ from spelling.check import context_to_filename
 from workflow.engine import GenericWorkflowEngine
 from workflow.errors import HaltProcessing
 
-from meticulous._input import get_confirmation, get_input
 from meticulous._nonword import (
     add_non_word,
     check_nonwords,
@@ -33,8 +31,9 @@ class NonwordState:  # pylint: disable=too-few-public-methods
     """
 
     def __init__(  # pylint: disable=too-many-arguments
-        self, target, word, details, repopath, nonword_delegate
+        self, context, target, word, details, repopath, nonword_delegate
     ):
+        self.context = context
         self.target = target
         self.word = word
         self.details = details
@@ -61,6 +60,7 @@ def collect_nonwords(context):
         reponame = context.taskjson["reponame"]
         if reponame in get_json_value("repository_map", {}):
             interactive_task_collect_nonwords(
+                context,
                 reponame,
                 target,
                 nonword_delegate=noninteractive_nonword_delegate(context),
@@ -100,38 +100,42 @@ def noninteractive_nonword_delegate(context):
     return handler
 
 
-def interactive_nonword_delegate(target):
+def interactive_nonword_delegate(context, target):
     """
     Obtain a basic interactive nonword update
     """
 
     def handler():
         pullreq = update_nonwords(target)
-        print(f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}")
+        context.interactive.send(
+            f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}"
+        )
 
     return handler
 
 
 def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
-    reponame, target, nonword_delegate=None, nonstop=False
+    context, reponame, target, nonword_delegate=None, nonstop=False
 ):
     """
     Saves nonwords until a typo is found
     """
     if nonword_delegate is None:
-        nonword_delegate = interactive_nonword_delegate(target)
+        nonword_delegate = interactive_nonword_delegate(context, target)
     key = "repository_map"
     repository_map = get_json_value(key, {})
     repodir = repository_map[reponame]
     repodirpath = Path(repodir)
     jsonpath = repodirpath / "spelling.json"
     if not jsonpath.is_file():
-        print(f"Unable to locate spelling at {jsonpath}", file=sys.stderr)
+        context.interaction.send(f"Unable to locate spelling at {jsonpath}")
         return
     with io.open(jsonpath, "r", encoding="utf-8") as fobj:
         jsonobj = json.load(fobj)
-    words = get_sorted_words(jsonobj)
-    processrepo = get_confirmation(
+    words = get_sorted_words(context.interaction, jsonobj)
+    if not words:
+        return
+    processrepo = context.interaction.get_confirmation(
         "Do you want to process this repository?", defaultval=True
     )
     if not processrepo:
@@ -140,6 +144,7 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
     my_engine.callbacks.replace([check_websearch, is_nonword, is_typo, what_now])
     for word in words:
         state = NonwordState(
+            context=context,
             target=target,
             word=word,
             details=jsonobj[word],
@@ -151,10 +156,12 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
         except HaltProcessing:
             if state.done and not nonstop:
                 return
-    print(f"{Fore.YELLOW}Completed checking all words for {reponame}!{Style.RESET_ALL}")
+    context.interaction.send(
+        f"{Fore.YELLOW}Completed checking all words for {reponame}!{Style.RESET_ALL}"
+    )
 
 
-def get_sorted_words(jsonobj):
+def get_sorted_words(interaction, jsonobj):
     """
     Sort the words first by frequency
     """
@@ -169,10 +176,10 @@ def get_sorted_words(jsonobj):
             priority = obj.priority
         order.append(((priority, len(details["files"])), word))
     order.sort(reverse=True)
-    print("-- Candidates Found: --")
+    interaction.send("-- Candidates Found: --")
     for (priority, num_files), word in order:
-        print(f"{word} (priority: {priority} # files: {num_files})")
-    print("-- End of candidates. --")
+        interaction.send(f"{word} (priority: {priority} # files: {num_files})")
+    interaction.send("-- End of candidates. --")
     return [word for _, word in order]
 
 
@@ -183,9 +190,12 @@ def check_websearch(obj, eng):
     suggestion = obj.details.get("suggestion_obj")
     if suggestion is None:
         return
-    show_word(obj.word, obj.details)
+    show_word(obj.context.interaction, obj.word, obj.details)
     if suggestion.is_nonword:
-        if get_confirmation("Web search suggests it is a non-word, agree?"):
+        is_non_word_check = obj.context.interaction.get_confirmation(
+            "Web search suggests it is a non-word, agree?"
+        )
+        if is_non_word_check:
             handle_nonword(obj.word, obj.target, obj.nonword_delegate)
             eng.halt("found nonword")
     if suggestion.is_typo:
@@ -197,18 +207,30 @@ def check_websearch(obj, eng):
                 )
                 for prefix, suffix in [("", ""), (Fore.CYAN, Style.RESET_ALL)]
             ]
-            print(msgs[-1])
-            if get_confirmation(msgs[0], defaultval=False):
-                fix_word(obj.word, obj.details, suggestion.replacement, obj.repopath)
+            obj.context.interaction.send(msgs[-1])
+            suggestion_check = obj.context.interaction.get_confirmation(
+                msgs[0], defaultval=False
+            )
+            if suggestion_check:
+                fix_word(
+                    obj.context.interaction,
+                    obj.word,
+                    obj.details,
+                    suggestion.replacement,
+                    obj.repopath,
+                )
                 obj.done = True
                 eng.halt("found typo")
         msgs = [
             (f"Web search suggests using {prefix}" f"typo{suffix}, agree?")
             for prefix, suffix in [("", ""), (Fore.RED, Style.RESET_ALL)]
         ]
-        print(msgs[-1])
-        if get_confirmation(msgs[0], defaultval=False):
-            handle_typo(obj.word, obj.details, obj.repopath)
+        obj.context.interaction.send(msgs[-1])
+        last_suggestion_check = obj.context.interaction.get_confirmation(
+            msgs[0], defaultval=False
+        )
+        if last_suggestion_check:
+            handle_typo(obj.context.interaction, obj.word, obj.details, obj.repopath)
             obj.done = True
             eng.halt("found typo")
 
@@ -217,8 +239,8 @@ def is_nonword(obj, eng):
     """
     Quick initial check to see if it is a nonword.
     """
-    show_word(obj.word, obj.details)
-    if get_confirmation("Is non-word?"):
+    show_word(obj.context.interaction, obj.word, obj.details)
+    if obj.context.interaction.get_confirmation("Is non-word?"):
         handle_nonword(obj.word, obj.target, obj.nonword_delegate)
         eng.halt("found nonword")
 
@@ -227,9 +249,9 @@ def is_typo(obj, eng):
     """
     Quick initial check to see if it is a typo.
     """
-    show_word(obj.word, obj.details)
-    if get_confirmation("Is it typo?"):
-        handle_typo(obj.word, obj.details, obj.repopath)
+    show_word(obj.context.interaction, obj.word, obj.details)
+    if obj.context.interaction.get_confirmation("Is it typo?"):
+        handle_typo(obj.context.interaction, obj.word, obj.details, obj.repopath)
         obj.done = True
         eng.halt("found typo")
 
@@ -238,21 +260,21 @@ def what_now(obj, eng):
     """
     Check to see what else to do.
     """
-    show_word(obj.word, obj.details)
-    print("Todo what now options?")
+    show_word(obj.context.interaction, obj.word, obj.details)
+    obj.context.interaction.send("Todo what now options?")
     eng.halt("what now?")
 
 
-def show_word(word, details):  # pylint: disable=unused-argument
+def show_word(interaction, word, details):  # pylint: disable=unused-argument
     """
     Display the word and its context.
     """
-    print(f"Checking word {word}")
+    interaction.send(f"Checking word {word}")
     files = sorted(
         set(context_to_filename(detail["file"]) for detail in details["files"])
     )
     for filename in files:
-        print(f"{filename}:")
+        interaction.send(f"{filename}:")
         with io.open(filename, "r", encoding="utf-8") as fobj:
             show_next = False
             prev_line = None
@@ -261,14 +283,14 @@ def show_word(word, details):  # pylint: disable=unused-argument
                 output = get_colourized(line, word)
                 if output:
                     if prev_line:
-                        print("-" * 60)
-                        print(prev_line)
+                        interaction.send("-" * 60)
+                        interaction.send(prev_line)
                         prev_line = None
-                    print(output)
+                    interaction.send(output)
                     show_next = True
                 elif show_next:
-                    print(line)
-                    print("-" * 60)
+                    interaction.send(line)
+                    interaction.send("-" * 60)
                     show_next = False
                 else:
                     prev_line = line
@@ -310,24 +332,26 @@ def handle_nonword(word, target, nonword_delegate):  # pylint: disable=unused-ar
         nonword_delegate()
 
 
-def handle_typo(word, details, repopath):  # pylint: disable=unused-argument
+def handle_typo(
+    interaction, word, details, repopath
+):  # pylint: disable=unused-argument
     """
     Handle a typo
     """
-    if get_confirmation(f"Do you want to google {word}"):
+    if interaction.get_confirmation(f"Do you want to google {word}"):
         browser = local[get_browser()]
         search = f"https://www.google.com.au/search?q={quote(word)}"
         _ = browser[search] & FG
-    newspell = get_input(f"How do you spell {word}?")
+    newspell = interaction.get_input(f"How do you spell {word}?")
     if newspell:
-        fix_word(word, details, newspell, repopath)
+        fix_word(interaction, word, details, newspell, repopath)
 
 
-def fix_word(word, details, newspell, repopath):
+def fix_word(interaction, word, details, newspell, repopath):
     """
     Save the correction
     """
-    print(f"Changing {word} to {newspell}")
+    interaction.send(f"Changing {word} to {newspell}")
     files = sorted(
         set(context_to_filename(detail["file"]) for detail in details["files"])
     )

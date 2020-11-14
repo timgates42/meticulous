@@ -39,6 +39,8 @@ $ pip install meticulous
 - requests
 - workflow
 - colorama
+- psycopg2
+- ansi2html
 
 
 ## Download from PyPI.org

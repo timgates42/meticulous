@@ -18,7 +18,6 @@ from meticulous._github import (
     is_archived,
     issues_allowed,
 )
-from meticulous._input import get_confirmation
 from meticulous._nonword import is_local_non_word
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, set_json_value
@@ -45,7 +44,7 @@ def repository_load(context):
     def handler():
         reponame = interactive_pickrepo()
         if reponame is None:
-            print("No more repositories to examine.")
+            context.interaction.send("No more repositories to examine.")
             context.controller.add(
                 {"name": "prompt_quit", "interactive": True, "priority": 65}
             )
@@ -103,7 +102,7 @@ def repository_summary(context):
                 "reponame": reponame,
             }
         )
-        if get_confirmation("Do you want to quit?"):
+        if context.interaction.check_quit():
             context.controller.quit()
 
     return handler
