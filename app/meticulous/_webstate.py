@@ -48,7 +48,29 @@ No interaction required yet, will reload.
 location.reload()
 </script>
 """
-        return f"<html><body>{content}</body></html>"
+        return f"""
+<html>
+<body>
+<style> 
+input[type=button], input[type=submit], input[type=reset] {
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 16px 32px;
+  text-decoration: none;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+
+
+table {
+  width: 100%;
+}
+</style>
+{content}
+</body>
+</html>
+"""
 
     def start(self, target):
         """
@@ -198,6 +220,11 @@ class Confirmation(Awaiter):
         buttons = f"""
 <table><tr><td>
 {formyes}
+</td><td>
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
 </td><td>
 {formno}
 </td></tr></table>
