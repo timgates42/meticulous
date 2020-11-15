@@ -129,8 +129,9 @@ table {
         A response is chosen
         """
         with self.condition:
+            self.await_key = None
+            del self.messages[:]
             self.response_val = val
-            del self.messages[:-20]
             self.condition.notify()
 
 
@@ -161,7 +162,7 @@ class Awaiter:
         return """
 Submission recorded, page will reload.
 <script>
-location.reload();
+setTimeout("location.reload()", 500);
 </script>
 """
 
