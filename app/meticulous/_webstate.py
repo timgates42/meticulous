@@ -45,7 +45,7 @@ class StateHandler(Interaction):
                 content += """
 No interaction required yet, will reload.
 <script>
-location.reload()
+setTimeout("location.reload()", 500);
 </script>
 """
         return """
