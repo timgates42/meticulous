@@ -24,7 +24,7 @@ class Suggestion:
         self.replacement = replacement
         self.priority = (
             3
-            if self.replacement is not None
+            if self.replacement
             else (2 if self.is_typo else (1 if self.is_nonword else 0))
         )
 

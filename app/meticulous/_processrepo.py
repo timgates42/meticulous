@@ -188,12 +188,18 @@ def get_sorted_words(interaction, jsonobj):
             obj = Suggestion.load(details["suggestion"])
             details["suggestion_obj"] = obj
             priority = obj.priority
-        order.append(((priority, len(details["files"])), word))
+        order.append(((priority, len(details["files"]), obj.replacement), word))
     order.sort(reverse=True)
-    interaction.send("-- Candidates Found: --")
-    for (priority, num_files), word in order:
-        interaction.send(f"{word} (priority: {priority} # files: {num_files})")
-    interaction.send("-- End of candidates. --")
+    interaction.send(f"-- Candidates Found: {len(order)} --")
+    maxwords = 50
+    for (priority, num_files, replacement), word in order[:maxwords]:
+        if not replacement:
+            replacement = "?"
+        interaction.send(f"{word} (-> {replacement} # files: {num_files})")
+    if len(order) > maxwords:
+        interaction.send(f"-- Skipping {len(order) - maxwords} candidates. --")
+    else:
+        interaction.send("-- End of candidates. --")
     return [word for _, word in order]
 
 
