@@ -184,11 +184,13 @@ def get_sorted_words(interaction, jsonobj):
         if is_local_non_word(word):
             continue
         priority = 0
+        replacement = ""
         if details.get("suggestion"):
             obj = Suggestion.load(details["suggestion"])
             details["suggestion_obj"] = obj
             priority = obj.priority
-        order.append(((priority, len(details["files"]), obj.replacement), word))
+            replacement = obj.replacement
+        order.append(((priority, len(details["files"]), replacement), word))
     order.sort(reverse=True)
     interaction.send(f"-- Candidates Found: {len(order)} --")
     maxwords = 50
