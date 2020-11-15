@@ -48,10 +48,10 @@ No interaction required yet, will reload.
 location.reload()
 </script>
 """
-        return f"""
+        return """
 <html>
 <body>
-<style> 
+<style>
 input[type=button], input[type=submit], input[type=reset] {
   background-color: #4CAF50;
   border: none;
@@ -64,13 +64,15 @@ input[type=button], input[type=submit], input[type=reset] {
 
 
 table {
-  width: 100%;
+  width: 100%%;
 }
 </style>
-{content}
+%s
 </body>
 </html>
-"""
+""" % (
+            content,
+        )
 
     def start(self, target):
         """
