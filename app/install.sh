@@ -11,6 +11,7 @@ apt-get install -qq -y aspell aspell-en
 apt-get install -qq -y hunspell hunspell-en-au
 apt-get install -qq -y shellcheck
 apt-get install -qq -y git
+apt-get install -qq -y libpq-dev
 
 for PYVER in ${PYTHONVERS} ; do
   cd "${BASEDIR}/pip/${PYVER}"
