@@ -3,9 +3,12 @@ Stores the current input requirement for the web requests to await their arrival
 """
 
 import datetime
+import uuid
 from threading import Condition, Thread
 
 from ansi2html import Ansi2HTMLConverter
+from flask import request
+
 from meticulous._multiworker import Interaction, multiworker_core
 
 INPUT = 0
@@ -30,10 +33,21 @@ class StateHandler(Interaction):
         """
         Return the current input requirement to the end user
         """
-        conv = Ansi2HTMLConverter()
-        content = "".join(conv.convert(msg) for msg in self.messages)
+        content = None
         if self.await_key is not None:
-            content += self.await_key.get_html()
+            content = self.await_key.handle(self)
+        if content is None:
+            conv = Ansi2HTMLConverter()
+            content = "".join(conv.convert(msg) for msg in self.messages)
+            if self.await_key is not None:
+                content += self.await_key.get_html()
+            else:
+                content += """
+No interaction required yet, will reload.
+<script>
+location.reload()
+</script>
+"""
         return f"<html><body>{content}</body></html>"
 
     def start(self, target):
@@ -86,11 +100,52 @@ class StateHandler(Interaction):
     def send(self, message):
         self.messages.append(message)
 
+    def respond(self, val):
+        """
+        A response is chosen
+        """
+        with self.condition:
+            self.response_val = val
+            del self.messages[:-20]
+            self.condition.notify()
+
 
 class Awaiter:
     """
     Waiting on some user input
     """
+
+    def __init__(self):
+        self.uuid = uuid.uuid4()
+
+    def get_form(self, content):
+        """
+        Get form submission html
+        """
+        return f"""
+<form method="POST">
+<input type="hidden" name="uuid" value="{self.uuid}">
+{content}
+</form>
+"""
+
+    @staticmethod
+    def reload():
+        """
+        Request reloading after a short duration of processing
+        """
+        return """
+Submission recorded, page will reload.
+<script>
+location.reload();
+</script>
+"""
+
+    def handle(self, state):
+        """
+        Handle form submission
+        """
+        raise NotImplementedError()
 
     def get_html(self):
         """
@@ -105,8 +160,32 @@ class Confirmation(Awaiter):
     """
 
     def __init__(self, message, defaultval):
+        super().__init__()
         self.message = message
         self.defaultval = defaultval
+
+    def get_form_button(self, val):
+        """
+        Get a simple pick a value form
+        """
+        return self.get_form(
+            f"""
+<input type="hidden" name="choose" value="{val}" />
+<input type="submit" value="{val}" />
+"""
+        )
+
+    def handle(self, state):
+        """
+        Handle form submission
+        """
+        if request.form.get("uuid") != str(self.uuid):
+            return None
+        val = request.form.get("choose")
+        if val not in ["Yes", "No"]:
+            return None
+        state.respond(val == "Yes")
+        return self.reload()
 
     def get_html(self):
         """
@@ -114,7 +193,16 @@ class Confirmation(Awaiter):
         """
         conv = Ansi2HTMLConverter()
         content = conv.convert(self.message)
-        return content
+        formyes = self.get_form_button("Yes")
+        formno = self.get_form_button("No")
+        buttons = f"""
+<table><tr><td>
+{formyes}
+</td><td>
+{formno}
+</td></tr></table>
+"""
+        return content + buttons
 
 
 class Input(Awaiter):
@@ -123,7 +211,20 @@ class Input(Awaiter):
     """
 
     def __init__(self, message):
+        super().__init__()
         self.message = message
+
+    def handle(self, state):
+        """
+        Handle form submission
+        """
+        if request.form.get("uuid") != str(self.uuid):
+            return None
+        val = request.form.get("textinput")
+        if val is None:
+            return None
+        state.respond(val)
+        return self.reload()
 
     def get_html(self):
         """
@@ -131,6 +232,14 @@ class Input(Awaiter):
         """
         conv = Ansi2HTMLConverter()
         content = conv.convert(self.message)
+        textinput = """
+<table><tr><td>
+<input type="text" name="textinput" value="" />
+</td><td>
+<input type="submit" value="Save" />
+</td></tr></table>
+"""
+        content += self.get_form(textinput)
         return content
 
 
