@@ -173,6 +173,12 @@ class Interaction:
         """
         raise NotImplementedError()
 
+    def make_choice(self, choices, message="Please make a selection."):
+        """
+        Get arbitrary choice input
+        """
+        raise NotImplementedError()
+
     def check_quit(self):
         """
         Check if time to quit
@@ -199,6 +205,12 @@ class KeyboardInteraction(Interaction):
 
     def get_confirmation(self, message="Do you want to continue", defaultval=True):
         return _input.get_confirmation(message=message, defaultval=defaultval)
+
+    def make_choice(self, choices, message="Please make a selection."):
+        """
+        Get arbitrary choice input
+        """
+        return _input.make_choice(choices=choices, message=message)
 
     def send(self, message):
         print(message)

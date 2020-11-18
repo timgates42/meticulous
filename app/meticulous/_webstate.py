@@ -104,6 +104,9 @@ table {
     def get_input(self, message):
         return self.get_await(Input(message))
 
+    def make_choice(self, choices, message):
+        return self.get_await(Choice(choices, message))
+
     def check_quit(self):
         return True
 
@@ -270,6 +273,45 @@ class Input(Awaiter):
 </td></tr></table>
 """
         content += self.get_form(textinput)
+        return content
+
+
+class Choice(Awaiter):
+    """
+    Selection from choices
+    """
+
+    def __init__(self, choices, message):
+        super().__init__()
+        self.choices = choices
+        self.message = message
+
+    def handle(self, state):
+        """
+        Handle form submission
+        """
+        if request.form.get("uuid") != str(self.uuid):
+            return None
+        val = request.form.get("selection")
+        if val is None:
+            return None
+        state.respond(self.choices.get(val))
+        return self.reload()
+
+    def get_html(self):
+        """
+        Obtain the request HTML
+        """
+        conv = Ansi2HTMLConverter()
+        content = conv.convert(self.message)
+        selectform = """
+<table><tr><td>
+TODO selection here
+</td><td>
+<input type="submit" value="Save" />
+</td></tr></table>
+"""
+        content += self.get_form(selectform)
         return content
 
 
