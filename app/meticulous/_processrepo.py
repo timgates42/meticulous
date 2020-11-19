@@ -291,31 +291,42 @@ def show_word(interaction, word, details):  # pylint: disable=unused-argument
     """
     Display the word and its context.
     """
-    interaction.send(f"Checking word {word}")
     files = sorted(
         set(context_to_filename(detail["file"]) for detail in details["files"])
     )
-    for filename in files:
+    interaction.send(f"Checking word {word} - ({len(files)} files)")
+    max_files = 4
+    for filename in files[:max_files]:
         interaction.send(f"{filename}:")
         with io.open(filename, "r", encoding="utf-8") as fobj:
             show_next = False
             prev_line = None
+            shown = 0
+            max_shown = 3
             for line in fobj:
                 line = line.rstrip("\r\n")
                 output = get_colourized(line, word)
                 if output:
-                    if prev_line:
-                        interaction.send("-" * 60)
-                        interaction.send(prev_line)
-                        prev_line = None
-                    interaction.send(output)
-                    show_next = True
+                    if shown < max_shown:
+                        if prev_line:
+                            interaction.send("-" * 60)
+                            interaction.send(prev_line)
+                            prev_line = None
+                        interaction.send(output)
+                        show_next = True
+                    else:
+                        shown += 1
                 elif show_next:
                     interaction.send(line)
                     interaction.send("-" * 60)
                     show_next = False
+                    shown += 1
                 else:
                     prev_line = line
+            if shown > max_shown:
+                interaction.send(f"... (skipping {shown - max_shown} matches)")
+    if len(files) > max_files:
+        interaction.send(f"... (skipping {len(files) - max_files} files)")
 
 
 def get_colourized(line, word):

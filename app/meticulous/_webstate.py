@@ -104,7 +104,7 @@ table {
     def get_input(self, message):
         return self.get_await(Input(message))
 
-    def make_choice(self, choices, message):
+    def make_choice(self, choices, message="Please make a selection."):
         return self.get_await(Choice(choices, message))
 
     def check_quit(self):
@@ -189,7 +189,8 @@ class Confirmation(Awaiter):
 
     def __init__(self, message, defaultval):
         super().__init__()
-        self.message = message
+        conv = Ansi2HTMLConverter()
+        self.content = conv.convert(message)
         self.defaultval = defaultval
 
     def get_form_button(self, val):
@@ -219,11 +220,10 @@ class Confirmation(Awaiter):
         """
         Obtain the request HTML
         """
-        conv = Ansi2HTMLConverter()
-        content = conv.convert(self.message)
         formyes = self.get_form_button("Yes")
         formno = self.get_form_button("No")
         buttons = f"""
+{self.content}<br/>
 <table><tr><td>
 {formyes}
 </td><td>
@@ -235,7 +235,7 @@ class Confirmation(Awaiter):
 {formno}
 </td></tr></table>
 """
-        return content + buttons
+        return buttons
 
 
 class Input(Awaiter):
@@ -245,7 +245,8 @@ class Input(Awaiter):
 
     def __init__(self, message):
         super().__init__()
-        self.message = message
+        conv = Ansi2HTMLConverter()
+        self.content = conv.convert(message)
 
     def handle(self, state):
         """
@@ -263,17 +264,15 @@ class Input(Awaiter):
         """
         Obtain the request HTML
         """
-        conv = Ansi2HTMLConverter()
-        content = conv.convert(self.message)
         textinput = """
+{self.content}<br/>
 <table><tr><td>
 <input type="text" name="textinput" value="" />
 </td><td>
 <input type="submit" value="Save" />
 </td></tr></table>
 """
-        content += self.get_form(textinput)
-        return content
+        return self.get_form(textinput)
 
 
 class Choice(Awaiter):
@@ -283,8 +282,14 @@ class Choice(Awaiter):
 
     def __init__(self, choices, message):
         super().__init__()
-        self.choices = choices
-        self.message = message
+        conv = Ansi2HTMLConverter()
+        self.content = conv.convert(message)
+        options = enumerate(sorted(choices.keys()))
+        self.choices = {index: choices[txt] for index, txt in options}
+        self.options = "\n".join(
+            f'<option value="{index}">{conv.convert(txt)}</option>'
+            for index, txt in options
+        )
 
     def handle(self, state):
         """
@@ -302,17 +307,15 @@ class Choice(Awaiter):
         """
         Obtain the request HTML
         """
-        conv = Ansi2HTMLConverter()
-        content = conv.convert(self.message)
-        selectform = """
+        selectform = f"""
+{self.content}<br/>
 <table><tr><td>
-TODO selection here
+<select name="selection">{self.options}</select>
 </td><td>
 <input type="submit" value="Save" />
 </td></tr></table>
 """
-        content += self.get_form(selectform)
-        return content
+        return self.get_form(selectform)
 
 
 STATE = StateHandler()
