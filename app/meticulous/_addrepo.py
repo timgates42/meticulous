@@ -71,9 +71,9 @@ def repository_checkout(context):
         noninteractive_checkout(target, reponame)
         context.controller.add(
             {
-                "name": "repository_summary",
+                "name": "collect_nonwords",
                 "interactive": True,
-                "priority": 55,
+                "priority": 50,
                 "reponame": reponame,
             }
         )
@@ -96,9 +96,9 @@ def repository_summary(context):
         display_repo_intro(repodir)
         context.controller.add(
             {
-                "name": "collect_nonwords",
+                "name": "submit",
                 "interactive": True,
-                "priority": 50,
+                "priority": 52,
                 "reponame": reponame,
             }
         )

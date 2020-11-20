@@ -67,9 +67,9 @@ def collect_nonwords(context):
             )
         context.controller.add(
             {
-                "name": "submit",
+                "name": "repository_summary",
                 "interactive": True,
-                "priority": 50,
+                "priority": 55,
                 "reponame": reponame,
             }
         )
