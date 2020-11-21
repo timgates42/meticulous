@@ -182,7 +182,7 @@ def interactive_new_word(context, repodirpath, target, nonword_delegate, jsonobj
             handle_typo(context.interaction, word, details, repodirpath)
         ),
         "2) Non-word": nonword_call,
-        "3) Skip": lambda: None,
+        "3) Skip": lambda: False,
     }
     if suggestion is not None:
         if suggestion.is_nonword:
@@ -191,8 +191,7 @@ def interactive_new_word(context, repodirpath, target, nonword_delegate, jsonobj
         if suggestion.is_typo:
             if suggestion.replacement:
                 text = (
-                    f"0) Suggest using {Fore.CYAN}"
-                    f"{suggestion.replacement}{Style.RESET_ALL}, agree?"
+                    f"0) Suggest using {suggestion.replacement}, agree?"
                 )
                 choices[text] = lambda: fix_word(
                     context.interaction,
@@ -415,6 +414,7 @@ def handle_nonword(word, target, nonword_delegate):  # pylint: disable=unused-ar
     add_non_word(word, target)
     if check_nonwords(target):
         nonword_delegate()
+    return True
 
 
 def handle_typo(
@@ -426,6 +426,8 @@ def handle_typo(
     newspell = interaction.get_input(f"How do you spell {word}?")
     if newspell:
         fix_word(interaction, word, details, newspell, repopath)
+        return True
+    return False
 
 
 def fix_word(interaction, word, details, newspell, repopath):
@@ -454,6 +456,7 @@ def fix_word(interaction, word, details, newspell, repopath):
             _ = git["add"][relpath] & FG
         file_paths.append(relpath)
     add_repo_save(str(repopath), newspell, word, file_paths)
+    return True
 
 
 def add_repo_save(repodir, add_word, del_word, file_paths):
