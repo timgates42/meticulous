@@ -127,7 +127,9 @@ def noninteractive_checkout(target, repo):
     """
     print(f"Checkout {repo}")
     checkout(repo, target)
+    print(f"Checking {repo}")
     spelling_check(repo, target)
+    print(f"Completed checking {repo}")
     return repo
 
 
