@@ -284,7 +284,7 @@ class Choice(Awaiter):
         super().__init__()
         conv = Ansi2HTMLConverter()
         self.content = conv.convert(message)
-        options = enumerate(sorted(choices.keys()))
+        options = list(enumerate(sorted(choices.keys())))
         self.choices = {index: choices[txt] for index, txt in options}
         self.options = "\n".join(
             f'<option value="{index}">{conv.convert(txt)}</option>'
