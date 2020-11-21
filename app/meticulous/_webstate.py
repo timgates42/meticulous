@@ -287,7 +287,7 @@ class Choice(Awaiter):
         options = list(enumerate(sorted(choices.keys())))
         self.choices = {index: choices[txt] for index, txt in options}
         self.options = "\n".join(
-            f'<option value="{index}">{conv.convert(txt)}</option>'
+            f'<option value="{index}">{txt}</option>'
             for index, txt in options
         )
 
