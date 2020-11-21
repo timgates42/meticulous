@@ -2,12 +2,10 @@
 Work through nonwords to find a typo
 """
 
-import collections
 import io
 import json
 import re
 from pathlib import Path
-from urllib.parse import quote
 
 from colorama import Fore, Style
 from plumbum import FG, local
@@ -22,7 +20,6 @@ from meticulous._nonword import (
     update_nonwords,
 )
 from meticulous._storage import get_json_value, set_json_value
-from meticulous._util import get_browser
 from meticulous._websearch import Suggestion
 
 
@@ -41,11 +38,6 @@ class NonwordState:  # pylint: disable=too-few-public-methods
         self.repopath = repopath
         self.nonword_delegate = nonword_delegate
         self.done = False
-
-
-SingleWordResult = collections.namedtuple(
-    "SingleWordResult", ["continue_words", "outcome"]
-)
 
 
 def processrepo_handlers():
@@ -163,17 +155,57 @@ def interactive_task_collect_nonwords_run(
     if not processrepo:
         return False
     for word in words:
-        result = interactive_old_word(
-            context, repodirpath, target, nonstop, nonword_delegate, jsonobj, word,
+        processed_word = interactive_new_word(
+            context, repodirpath, target, nonword_delegate, jsonobj, word,
         )
-        if not result.continue_words:
-            return result.outcome
+        if processed_word and not nonstop:
+            return True
     return True
 
 
-def interactive_old_word(
-    context, repodirpath, target, nonstop, nonword_delegate, jsonobj, word
-):
+def interactive_new_word(context, repodirpath, target, nonword_delegate, jsonobj, word):
+    """
+    Single word processing
+    """
+    details = jsonobj[word]
+    suggestion = details.get("suggestion_obj")
+    show_word(context.interaction, word, details)
+
+    def nonword_call():
+        """
+        Selected nonword option
+        """
+        return handle_nonword(word, target, nonword_delegate)
+
+    choices = {
+        "1) Typo": lambda: (
+            handle_typo(context.interaction, word, details, repodirpath)
+        ),
+        "2) Non-word": nonword_call,
+        "3) Skip": lambda: None,
+    }
+    if suggestion is not None:
+        if suggestion.is_nonword:
+            text = "0) Suggest non-word, agree?"
+            choices[text] = nonword_call
+        if suggestion.is_typo:
+            if suggestion.replacement:
+                text = (
+                    f"0) Suggest using {Fore.CYAN}"
+                    f"{suggestion.replacement}{Style.RESET_ALL}, agree?"
+                )
+                choices[text] = lambda: fix_word(
+                    context.interaction,
+                    word,
+                    details,
+                    suggestion.replacement,
+                    repodirpath,
+                )
+    result = context.interaction.make_choice(choices)
+    return result()
+
+
+def interactive_old_word(context, repodirpath, target, nonword_delegate, jsonobj, word):
     """
     Single word processing
     """
@@ -190,9 +222,9 @@ def interactive_old_word(
     try:
         my_engine.process([state])
     except HaltProcessing:
-        if state.done and not nonstop:
-            return SingleWordResult(continue_words=False, outcome=False)
-    return SingleWordResult(continue_words=True, outcome=True)
+        if state.done:
+            return True
+    return False
 
 
 def get_sorted_words(interaction, jsonobj):
@@ -391,10 +423,6 @@ def handle_typo(
     """
     Handle a typo
     """
-    if interaction.get_confirmation(f"Do you want to google {word}"):
-        browser = local[get_browser()]
-        search = f"https://www.google.com.au/search?q={quote(word)}"
-        _ = browser[search] & FG
     newspell = interaction.get_input(f"How do you spell {word}?")
     if newspell:
         fix_word(interaction, word, details, newspell, repopath)
