@@ -49,6 +49,8 @@ def get_json_value(key, deflt=None):
     """
     deflt = json.dumps(deflt)
     jsonval = get_value(key, deflt=deflt)
+    if jsonval is None:
+        return None
     return json.loads(jsonval)
 
 

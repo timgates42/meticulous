@@ -12,6 +12,8 @@ from urllib.parse import quote, unquote
 import requests
 from bs4 import BeautifulSoup
 
+from meticulous._storage import get_json_value, set_json_value
+
 
 class Suggestion:
     """
@@ -108,6 +110,24 @@ class GoogleLock:
 
 
 def get_suggestion(word):
+    """
+    Use the internet to determine if the provided word is a nonword or a typo
+    """
+    key = f"suggestion.{word}"
+    existing = get_json_value(key)
+    if existing is not None:
+        if existing.get("no_suggestion"):
+            return None
+        return Suggestion.load(existing)
+    suggestion = search_suggestion(word)
+    if suggestion is None:
+        set_json_value(key, {"no_suggestion": True})
+        return None
+    set_json_value(key, suggestion.save())
+    return suggestion
+
+
+def search_suggestion(word):
     """
     Use the internet to determine if the provided word is a nonword or a typo
     """
