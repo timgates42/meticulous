@@ -2,6 +2,7 @@
 Work through nonwords to find a typo
 """
 
+import collections
 import io
 import json
 import re
@@ -40,6 +41,11 @@ class NonwordState:  # pylint: disable=too-few-public-methods
         self.repopath = repopath
         self.nonword_delegate = nonword_delegate
         self.done = False
+
+
+SingleWordResult = collections.namedtuple(
+    "SingleWordResult", ["continue_words", "outcome"]
+)
 
 
 def processrepo_handlers():
@@ -156,23 +162,37 @@ def interactive_task_collect_nonwords_run(
     )
     if not processrepo:
         return False
+    for word in words:
+        result = interactive_old_word(
+            context, repodirpath, target, nonstop, nonword_delegate, jsonobj, word,
+        )
+        if not result.continue_words:
+            return result.outcome
+    return True
+
+
+def interactive_old_word(
+    context, repodirpath, target, nonstop, nonword_delegate, jsonobj, word
+):
+    """
+    Single word processing
+    """
     my_engine = GenericWorkflowEngine()
     my_engine.callbacks.replace([check_websearch, is_nonword, is_typo, what_now])
-    for word in words:
-        state = NonwordState(
-            context=context,
-            target=target,
-            word=word,
-            details=jsonobj[word],
-            repopath=repodirpath,
-            nonword_delegate=nonword_delegate,
-        )
-        try:
-            my_engine.process([state])
-        except HaltProcessing:
-            if state.done and not nonstop:
-                return False
-    return True
+    state = NonwordState(
+        context=context,
+        target=target,
+        word=word,
+        details=jsonobj[word],
+        repopath=repodirpath,
+        nonword_delegate=nonword_delegate,
+    )
+    try:
+        my_engine.process([state])
+    except HaltProcessing:
+        if state.done and not nonstop:
+            return SingleWordResult(continue_words=False, outcome=False)
+    return SingleWordResult(continue_words=True, outcome=True)
 
 
 def get_sorted_words(interaction, jsonobj):
