@@ -104,7 +104,7 @@ def repository_summary(context):
                 "reponame": reponame,
             }
         )
-        if context.interaction.check_quit():
+        if context.interaction.check_quit(context.controller):
             context.controller.quit()
 
     return handler

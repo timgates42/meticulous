@@ -112,8 +112,8 @@ table {
     def make_choice(self, choices, message="Please make a selection."):
         return self.get_await(Choice(choices, message))
 
-    def check_quit(self):
-        return True
+    def check_quit(self, controller):
+        return controller.tasks_empty()
 
     def get_confirmation(self, message="Do you want to continue", defaultval=True):
         return self.get_await(Confirmation(message, defaultval))

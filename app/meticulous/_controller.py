@@ -89,10 +89,10 @@ class Controller:
         """
         task = self._input_queue.pop()
         add_progress(
-            ("tasks",), repr(self._input_queue),
+            ("tasks",), f"Pending {self._input_queue!r}",
         )
         add_progress(
-            ("running",), repr(task),
+            ("running",), f"Running {task!r}",
         )
         factory = self._handlers[task["name"]]
         context = Context(controller=self, taskjson=task, interaction=interaction)
