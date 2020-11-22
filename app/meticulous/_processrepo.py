@@ -6,7 +6,6 @@ import io
 import json
 import re
 from pathlib import Path
-from urllib.parse import quote
 
 from colorama import Fore, Style
 from plumbum import FG, local
@@ -21,7 +20,6 @@ from meticulous._nonword import (
     update_nonwords,
 )
 from meticulous._storage import get_json_value, set_json_value
-from meticulous._util import get_browser
 from meticulous._websearch import Suggestion
 
 
@@ -65,14 +63,14 @@ def collect_nonwords(context):
                 target,
                 nonword_delegate=noninteractive_nonword_delegate(context),
             )
-        context.controller.add(
-            {
-                "name": "submit",
-                "interactive": True,
-                "priority": 50,
-                "reponame": reponame,
-            }
-        )
+            context.controller.add(
+                {
+                    "name": "submit",
+                    "interactive": True,
+                    "priority": 50,
+                    "reponame": reponame,
+                }
+            )
 
     return handler
 
@@ -137,8 +135,8 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
     )
     if complete:
         context.interaction.send(
-            f"{Fore.YELLOW}Completed checking all"
-            f" words for {reponame}!{Style.RESET_ALL}"
+            f"{Fore.YELLOW}Found all words"
+            f" for {reponame}!{Style.RESET_ALL}"
         )
 
 
@@ -156,23 +154,78 @@ def interactive_task_collect_nonwords_run(
     )
     if not processrepo:
         return False
+    for word in words:
+        print(f"Checking word {word}")
+        completed = interactive_new_word(
+            context, repodirpath, target, nonword_delegate, jsonobj, word,
+        )
+        print(f"Checked word {word} - {completed}")
+        if completed and not nonstop:
+            return False
+    return True
+
+
+def interactive_new_word(context, repodirpath, target, nonword_delegate, jsonobj, word):
+    """
+    Single word processing
+    """
+    details = jsonobj[word]
+    suggestion = details.get("suggestion_obj")
+    show_word(context.interaction, word, details)
+
+    def nonword_call():
+        """
+        Selected nonword option
+        """
+        return handle_nonword(word, target, nonword_delegate)
+
+    choices = {
+        "1) Typo": lambda: (
+            handle_typo(context.interaction, word, details, repodirpath)
+        ),
+        "2) Non-word": nonword_call,
+        "3) Skip": lambda: False,
+    }
+    if suggestion is not None:
+        if suggestion.is_nonword:
+            text = "0) Suggest non-word, agree?"
+            choices[text] = nonword_call
+        if suggestion.is_typo:
+            if suggestion.replacement:
+                text = (
+                    f"0) Suggest using {suggestion.replacement}, agree?"
+                )
+                choices[text] = lambda: fix_word(
+                    context.interaction,
+                    word,
+                    details,
+                    suggestion.replacement,
+                    repodirpath,
+                )
+    result = context.interaction.make_choice(choices)
+    return result()
+
+
+def interactive_old_word(context, repodirpath, target, nonword_delegate, jsonobj, word):
+    """
+    Single word processing
+    """
     my_engine = GenericWorkflowEngine()
     my_engine.callbacks.replace([check_websearch, is_nonword, is_typo, what_now])
-    for word in words:
-        state = NonwordState(
-            context=context,
-            target=target,
-            word=word,
-            details=jsonobj[word],
-            repopath=repodirpath,
-            nonword_delegate=nonword_delegate,
-        )
-        try:
-            my_engine.process([state])
-        except HaltProcessing:
-            if state.done and not nonstop:
-                return False
-    return True
+    state = NonwordState(
+        context=context,
+        target=target,
+        word=word,
+        details=jsonobj[word],
+        repopath=repodirpath,
+        nonword_delegate=nonword_delegate,
+    )
+    try:
+        my_engine.process([state])
+    except HaltProcessing:
+        if state.done:
+            return True
+    return False
 
 
 def get_sorted_words(interaction, jsonobj):
@@ -184,16 +237,24 @@ def get_sorted_words(interaction, jsonobj):
         if is_local_non_word(word):
             continue
         priority = 0
+        replacement = ""
         if details.get("suggestion"):
             obj = Suggestion.load(details["suggestion"])
             details["suggestion_obj"] = obj
             priority = obj.priority
-        order.append(((priority, len(details["files"])), word))
+            replacement = obj.replacement
+        order.append(((priority, len(details["files"]), replacement), word))
     order.sort(reverse=True)
-    interaction.send("-- Candidates Found: --")
-    for (priority, num_files), word in order:
-        interaction.send(f"{word} (priority: {priority} # files: {num_files})")
-    interaction.send("-- End of candidates. --")
+    interaction.send(f"-- Candidates Found: {len(order)} --")
+    maxwords = 50
+    for (priority, num_files, replacement), word in order[:maxwords]:
+        if not replacement:
+            replacement = "?"
+        interaction.send(f"{word} (-> {replacement} # files: {num_files})")
+    if len(order) > maxwords:
+        interaction.send(f"-- Skipping {len(order) - maxwords} candidates. --")
+    else:
+        interaction.send("-- End of candidates. --")
     return [word for _, word in order]
 
 
@@ -283,31 +344,42 @@ def show_word(interaction, word, details):  # pylint: disable=unused-argument
     """
     Display the word and its context.
     """
-    interaction.send(f"Checking word {word}")
     files = sorted(
         set(context_to_filename(detail["file"]) for detail in details["files"])
     )
-    for filename in files:
+    interaction.send(f"Checking word {word} - ({len(files)} files)")
+    max_files = 4
+    for filename in files[:max_files]:
         interaction.send(f"{filename}:")
         with io.open(filename, "r", encoding="utf-8") as fobj:
             show_next = False
             prev_line = None
+            shown = 0
+            max_shown = 3
             for line in fobj:
                 line = line.rstrip("\r\n")
                 output = get_colourized(line, word)
                 if output:
-                    if prev_line:
-                        interaction.send("-" * 60)
-                        interaction.send(prev_line)
-                        prev_line = None
-                    interaction.send(output)
-                    show_next = True
+                    if shown < max_shown:
+                        if prev_line:
+                            interaction.send("-" * 60)
+                            interaction.send(prev_line)
+                            prev_line = None
+                        interaction.send(output)
+                        show_next = True
+                    else:
+                        shown += 1
                 elif show_next:
                     interaction.send(line)
                     interaction.send("-" * 60)
                     show_next = False
+                    shown += 1
                 else:
                     prev_line = line
+            if shown > max_shown:
+                interaction.send(f"... (skipping {shown - max_shown} matches)")
+    if len(files) > max_files:
+        interaction.send(f"... (skipping {len(files) - max_files} files)")
 
 
 def get_colourized(line, word):
@@ -344,6 +416,7 @@ def handle_nonword(word, target, nonword_delegate):  # pylint: disable=unused-ar
     add_non_word(word, target)
     if check_nonwords(target):
         nonword_delegate()
+    return False
 
 
 def handle_typo(
@@ -352,13 +425,11 @@ def handle_typo(
     """
     Handle a typo
     """
-    if interaction.get_confirmation(f"Do you want to google {word}"):
-        browser = local[get_browser()]
-        search = f"https://www.google.com.au/search?q={quote(word)}"
-        _ = browser[search] & FG
     newspell = interaction.get_input(f"How do you spell {word}?")
     if newspell:
         fix_word(interaction, word, details, newspell, repopath)
+        return True
+    return False
 
 
 def fix_word(interaction, word, details, newspell, repopath):
@@ -387,6 +458,7 @@ def fix_word(interaction, word, details, newspell, repopath):
             _ = git["add"][relpath] & FG
         file_paths.append(relpath)
     add_repo_save(str(repopath), newspell, word, file_paths)
+    return True
 
 
 def add_repo_save(repodir, add_word, del_word, file_paths):

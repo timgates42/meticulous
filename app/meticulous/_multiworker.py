@@ -119,7 +119,7 @@ def prompt_quit(context):
     """
 
     def handler():
-        if context.interaction.check_quit():
+        if context.interaction.check_quit(context.controller):
             context.controller.quit()
         else:
             context.controller.add(
@@ -173,7 +173,13 @@ class Interaction:
         """
         raise NotImplementedError()
 
-    def check_quit(self):
+    def make_choice(self, choices, message="Please make a selection."):
+        """
+        Get arbitrary choice input
+        """
+        raise NotImplementedError()
+
+    def check_quit(self, controller):
         """
         Check if time to quit
         """
@@ -194,11 +200,17 @@ class KeyboardInteraction(Interaction):
     def get_input(self, message):
         return _input.get_input(message=message)
 
-    def check_quit(self):
+    def check_quit(self, controller):
         return _input.get_confirmation(message="Do you want to quit?", defaultval=True)
 
     def get_confirmation(self, message="Do you want to continue", defaultval=True):
         return _input.get_confirmation(message=message, defaultval=defaultval)
+
+    def make_choice(self, choices, message="Please make a selection."):
+        """
+        Get arbitrary choice input
+        """
+        return _input.make_choice(choices=choices, message=message)
 
     def send(self, message):
         print(message)

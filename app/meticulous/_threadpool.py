@@ -7,6 +7,8 @@ import concurrent.futures
 import logging
 import threading
 
+from meticulous._progress import add_progress, clear_progress
+
 Context = collections.namedtuple("Context", ["taskjson", "controller"])
 
 
@@ -43,8 +45,15 @@ class PoolManager:
             if self._draining:
                 self._saved.append(taskjson)
                 return
-            handler = self.load_handler(taskjson, controller)
-            handler()
+            tid = threading.current_thread().ident
+            key = ("worker", tid)
+            try:
+                msg = f"Starting job {taskjson!r}"
+                add_progress(key, msg)
+                handler = self.load_handler(taskjson, controller)
+                handler()
+            finally:
+                clear_progress(key)
         except Exception:  # pylint: disable=broad-except
             logging.exception("Unhandled error")
 

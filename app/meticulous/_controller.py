@@ -5,6 +5,8 @@ Manager user input and background tasks
 import collections
 import threading
 
+from meticulous._progress import add_progress
+
 Context = collections.namedtuple("Context", ["controller", "taskjson", "interaction"])
 
 
@@ -30,6 +32,9 @@ class Controller:
             self._input_queue.add(task)
         else:
             self._threadpool.add(task, self)
+        add_progress(
+            ("tasks",), repr(self._input_queue),
+        )
         with self.condition:
             self.condition.notify()
 
@@ -83,6 +88,12 @@ class Controller:
         Process one input task
         """
         task = self._input_queue.pop()
+        add_progress(
+            ("tasks",), f"Pending {self._input_queue!r}",
+        )
+        add_progress(
+            ("running",), f"Running {task!r}",
+        )
         factory = self._handlers[task["name"]]
         context = Context(controller=self, taskjson=task, interaction=interaction)
         handler = factory(context)

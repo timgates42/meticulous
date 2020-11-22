@@ -10,6 +10,7 @@ from ansi2html import Ansi2HTMLConverter
 from flask import request
 
 from meticulous._multiworker import Interaction, multiworker_core
+from meticulous._progress import get_progress
 
 INPUT = 0
 CONFIRMATION = 1
@@ -42,13 +43,41 @@ class StateHandler(Interaction):
             if self.await_key is not None:
                 content += self.await_key.get_html()
             else:
-                content += """
-No interaction required yet, will reload.
+                progress = "<br />".join(
+                    conv.convert(msg) for msg in get_progress()
+                )
+                content += f"""
+No interaction required yet, will reload.<br />
+{progress}
 <script>
-location.reload()
+setTimeout("location.reload()", 500);
 </script>
 """
-        return f"<html><body>{content}</body></html>"
+        return """
+<html>
+<body>
+<style>
+input[type=button], input[type=submit], input[type=reset] {
+  background-color: #4CAF50;
+  border: none;
+  color: white;
+  padding: 16px 32px;
+  text-decoration: none;
+  margin: 4px 2px;
+  cursor: pointer;
+}
+
+
+table {
+  width: 100%%;
+}
+</style>
+%s
+</body>
+</html>
+""" % (
+            content,
+        )
 
     def start(self, target):
         """
@@ -80,8 +109,11 @@ location.reload()
     def get_input(self, message):
         return self.get_await(Input(message))
 
-    def check_quit(self):
-        return True
+    def make_choice(self, choices, message="Please make a selection."):
+        return self.get_await(Choice(choices, message))
+
+    def check_quit(self, controller):
+        return controller.tasks_empty()
 
     def get_confirmation(self, message="Do you want to continue", defaultval=True):
         return self.get_await(Confirmation(message, defaultval))
@@ -105,8 +137,9 @@ location.reload()
         A response is chosen
         """
         with self.condition:
+            self.await_key = None
+            del self.messages[:]
             self.response_val = val
-            del self.messages[:-20]
             self.condition.notify()
 
 
@@ -137,7 +170,7 @@ class Awaiter:
         return """
 Submission recorded, page will reload.
 <script>
-location.reload();
+setTimeout("location.reload()", 500);
 </script>
 """
 
@@ -161,7 +194,8 @@ class Confirmation(Awaiter):
 
     def __init__(self, message, defaultval):
         super().__init__()
-        self.message = message
+        conv = Ansi2HTMLConverter()
+        self.content = conv.convert(message)
         self.defaultval = defaultval
 
     def get_form_button(self, val):
@@ -191,18 +225,22 @@ class Confirmation(Awaiter):
         """
         Obtain the request HTML
         """
-        conv = Ansi2HTMLConverter()
-        content = conv.convert(self.message)
         formyes = self.get_form_button("Yes")
         formno = self.get_form_button("No")
         buttons = f"""
+{self.content}<br/>
 <table><tr><td>
 {formyes}
+</td><td>
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
 </td><td>
 {formno}
 </td></tr></table>
 """
-        return content + buttons
+        return buttons
 
 
 class Input(Awaiter):
@@ -212,7 +250,8 @@ class Input(Awaiter):
 
     def __init__(self, message):
         super().__init__()
-        self.message = message
+        conv = Ansi2HTMLConverter()
+        self.content = conv.convert(message)
 
     def handle(self, state):
         """
@@ -230,17 +269,58 @@ class Input(Awaiter):
         """
         Obtain the request HTML
         """
-        conv = Ansi2HTMLConverter()
-        content = conv.convert(self.message)
         textinput = """
+{self.content}<br/>
 <table><tr><td>
 <input type="text" name="textinput" value="" />
 </td><td>
 <input type="submit" value="Save" />
 </td></tr></table>
 """
-        content += self.get_form(textinput)
-        return content
+        return self.get_form(textinput)
+
+
+class Choice(Awaiter):
+    """
+    Selection from choices
+    """
+
+    def __init__(self, choices, message):
+        super().__init__()
+        conv = Ansi2HTMLConverter()
+        self.content = conv.convert(message)
+        options = list(enumerate(sorted(choices.keys())))
+        self.choices = {index: choices[txt] for index, txt in options}
+        self.options = "\n".join(
+            f'<option value="{index}">{txt}</option>'
+            for index, txt in options
+        )
+
+    def handle(self, state):
+        """
+        Handle form submission
+        """
+        if request.form.get("uuid") != str(self.uuid):
+            return None
+        val = request.form.get("selection")
+        if val is None:
+            return None
+        state.respond(self.choices.get(int(val)))
+        return self.reload()
+
+    def get_html(self):
+        """
+        Obtain the request HTML
+        """
+        selectform = f"""
+{self.content}<br/>
+<table><tr><td>
+<select name="selection">{self.options}</select>
+</td><td>
+<input type="submit" value="Save" />
+</td></tr></table>
+"""
+        return self.get_form(selectform)
 
 
 STATE = StateHandler()
