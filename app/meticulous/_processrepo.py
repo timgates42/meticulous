@@ -57,21 +57,20 @@ def collect_nonwords(context):
         target = context.controller.target
         reponame = context.taskjson["reponame"]
         if reponame in get_json_value("repository_map", {}):
-            found_submission = interactive_task_collect_nonwords(
+            interactive_task_collect_nonwords(
                 context,
                 reponame,
                 target,
                 nonword_delegate=noninteractive_nonword_delegate(context),
             )
-            if found_submission:
-                context.controller.add(
-                    {
-                        "name": "submit",
-                        "interactive": True,
-                        "priority": 50,
-                        "reponame": reponame,
-                    }
-                )
+            context.controller.add(
+                {
+                    "name": "submit",
+                    "interactive": True,
+                    "priority": 50,
+                    "reponame": reponame,
+                }
+            )
 
     return handler
 
@@ -136,10 +135,9 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
     )
     if complete:
         context.interaction.send(
-            f"{Fore.YELLOW}Found submission"
+            f"{Fore.YELLOW}Found all words"
             f" for {reponame}!{Style.RESET_ALL}"
         )
-    return complete
 
 
 def interactive_task_collect_nonwords_run(
@@ -157,12 +155,14 @@ def interactive_task_collect_nonwords_run(
     if not processrepo:
         return False
     for word in words:
-        processed_word = interactive_new_word(
+        print(f"Checking word {word}")
+        completed = interactive_new_word(
             context, repodirpath, target, nonword_delegate, jsonobj, word,
         )
-        if processed_word and not nonstop:
-            return True
-    return False
+        print(f"Checked word {word} - {completed}")
+        if completed and not nonstop:
+            return False
+    return True
 
 
 def interactive_new_word(context, repodirpath, target, nonword_delegate, jsonobj, word):
