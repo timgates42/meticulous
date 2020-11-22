@@ -44,6 +44,9 @@ class InputQueue:
         _, taskitems = self.queue[0]
         return dict(taskitems)
 
+    def __repr__(self):
+        return f"InputQueue({self.queue!r})"
+
 
 def get_input_queue():
     """
