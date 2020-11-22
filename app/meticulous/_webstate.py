@@ -10,6 +10,7 @@ from ansi2html import Ansi2HTMLConverter
 from flask import request
 
 from meticulous._multiworker import Interaction, multiworker_core
+from meticulous._progress import get_progress
 
 INPUT = 0
 CONFIRMATION = 1
@@ -42,8 +43,12 @@ class StateHandler(Interaction):
             if self.await_key is not None:
                 content += self.await_key.get_html()
             else:
-                content += """
-No interaction required yet, will reload.
+                progress = "<br />".join(
+                    conv.convert(msg) for msg in get_progress()
+                )
+                content += f"""
+No interaction required yet, will reload.<br />
+{progress}
 <script>
 setTimeout("location.reload()", 500);
 </script>

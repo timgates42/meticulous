@@ -4,6 +4,7 @@ Manage process of adding repositories
 
 import io
 import json
+import random
 import subprocess  # noqa=S404 # nosec
 import sys
 
@@ -19,6 +20,7 @@ from meticulous._github import (
     issues_allowed,
 )
 from meticulous._nonword import is_local_non_word
+from meticulous._progress import add_progress, clear_progress
 from meticulous._sources import obtain_sources
 from meticulous._storage import get_json_value, set_json_value
 from meticulous._summary import display_repo_intro
@@ -198,7 +200,7 @@ def spelling_check(repo, target):
         raise Exception(f"Error checking spelling:\n{stderr}\n{stdout}")
     with io.open(jsonpath, "r", encoding="utf-8") as fobj:
         jsonobj = json.load(fobj)
-    jsonobj = update_json_results(jsonobj)
+    jsonobj = update_json_results(repo, jsonobj)
     with io.open(jsonpath, "w", encoding="utf-8") as fobj:
         json.dump(jsonobj, fobj)
     if not issues_allowed(repo):
@@ -207,20 +209,29 @@ def spelling_check(repo, target):
             print("No Issues.", file=fobj)
 
 
-def update_json_results(words):
+def update_json_results(repo, words):
     """
     Add suggestions for words
     """
+    key = ("suggestions", repo)
     result = {}
-    for word, details in words.items():
+    items = list(words.items())
+    random.SystemRandom().shuffle(items)
+    count = 0
+    max_suggestions = 50
+    for index, (word, details) in enumerate(items):
+        add_progress(key, f"Processing {index + 1} of {len(items)} for {repo}")
         if unanimous.util.is_nonword(word):
             details["nonword"] = True
             continue
         if is_local_non_word(word):
             details["nonword"] = True
             continue
-        suggestion = get_suggestion(word)
-        if suggestion is not None:
-            details["suggestion"] = suggestion.save()
+        if count < max_suggestions:
+            suggestion = get_suggestion(word)
+            count += 1
+            if suggestion is not None:
+                details["suggestion"] = suggestion.save()
         result[word] = details
+    clear_progress(key)
     return result
