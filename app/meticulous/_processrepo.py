@@ -414,7 +414,7 @@ def handle_nonword(word, target, nonword_delegate):  # pylint: disable=unused-ar
     add_non_word(word, target)
     if check_nonwords(target):
         nonword_delegate()
-    return True
+    return False
 
 
 def handle_typo(
