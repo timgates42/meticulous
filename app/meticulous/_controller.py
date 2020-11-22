@@ -91,6 +91,9 @@ class Controller:
         add_progress(
             ("tasks",), repr(self._input_queue),
         )
+        add_progress(
+            ("running",), repr(task),
+        )
         factory = self._handlers[task["name"]]
         context = Context(controller=self, taskjson=task, interaction=interaction)
         handler = factory(context)
