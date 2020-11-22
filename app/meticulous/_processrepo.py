@@ -57,20 +57,21 @@ def collect_nonwords(context):
         target = context.controller.target
         reponame = context.taskjson["reponame"]
         if reponame in get_json_value("repository_map", {}):
-            interactive_task_collect_nonwords(
+            found_submission = interactive_task_collect_nonwords(
                 context,
                 reponame,
                 target,
                 nonword_delegate=noninteractive_nonword_delegate(context),
             )
-        context.controller.add(
-            {
-                "name": "submit",
-                "interactive": True,
-                "priority": 50,
-                "reponame": reponame,
-            }
-        )
+            if found_submission:
+                context.controller.add(
+                    {
+                        "name": "submit",
+                        "interactive": True,
+                        "priority": 50,
+                        "reponame": reponame,
+                    }
+                )
 
     return handler
 
@@ -135,9 +136,10 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
     )
     if complete:
         context.interaction.send(
-            f"{Fore.YELLOW}Completed checking all"
-            f" words for {reponame}!{Style.RESET_ALL}"
+            f"{Fore.YELLOW}Found submission"
+            f" for {reponame}!{Style.RESET_ALL}"
         )
+    return complete
 
 
 def interactive_task_collect_nonwords_run(
@@ -160,7 +162,7 @@ def interactive_task_collect_nonwords_run(
         )
         if processed_word and not nonstop:
             return True
-    return True
+    return False
 
 
 def interactive_new_word(context, repodirpath, target, nonword_delegate, jsonobj, word):
