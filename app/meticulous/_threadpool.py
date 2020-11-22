@@ -49,7 +49,6 @@ class PoolManager:
             key = ("worker", tid)
             try:
                 msg = f"Starting job {taskjson!r}"
-                print(msg)
                 add_progress(key, msg)
                 handler = self.load_handler(taskjson, controller)
                 handler()
