@@ -305,7 +305,7 @@ class Choice(Awaiter):
         val = request.form.get("selection")
         if val is None:
             return None
-        state.respond(self.choices.get(val))
+        state.respond(self.choices.get(int(val)))
         return self.reload()
 
     def get_html(self):
