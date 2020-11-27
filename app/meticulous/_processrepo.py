@@ -131,10 +131,10 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
         return
     with io.open(jsonpath, "r", encoding="utf-8") as fobj:
         jsonobj = json.load(fobj)
-    complete = interactive_task_collect_nonwords_run(
+    completed = interactive_task_collect_nonwords_run(
         context, repodirpath, target, nonstop, nonword_delegate, jsonobj
     )
-    if complete:
+    if completed:
         context.interaction.send(
             f"{Fore.YELLOW}Found all words" f" for {reponame}!{Style.RESET_ALL}"
         )
@@ -151,7 +151,8 @@ def interactive_task_collect_nonwords_run(
     return handler.run(context, repodirpath, target, nonstop, nonword_delegate, jsonobj)
 
 
-WordChoiceResult = collections.namedtuple("WordChoiceResult", ["skip", "complete"])
+WordChoiceResult = collections.namedtuple("WordChoiceResult", ["skip",
+    "completed"])
 
 
 class WordChoiceHandler:
@@ -184,7 +185,7 @@ class WordChoiceHandler:
             """
             Finish processing early
             """
-            return WordChoiceResult(skip=True, complete=False)
+            return WordChoiceResult(skip=True, completed=False)
 
         txt = "99) Skip repository."
         choices = {txt: skip_handler}
