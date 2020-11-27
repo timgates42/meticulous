@@ -2,6 +2,7 @@
 Work through nonwords to find a typo
 """
 
+import collections
 import io
 import json
 import re
@@ -135,8 +136,7 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
     )
     if complete:
         context.interaction.send(
-            f"{Fore.YELLOW}Found all words"
-            f" for {reponame}!{Style.RESET_ALL}"
+            f"{Fore.YELLOW}Found all words" f" for {reponame}!{Style.RESET_ALL}"
         )
 
 
@@ -146,23 +146,88 @@ def interactive_task_collect_nonwords_run(
     """
     Given the json state - saves nonwords until a typo is found
     """
-    words = get_sorted_words(context.interaction, jsonobj)
-    if not words:
+    wordchoice = get_sorted_words(context.interaction, jsonobj)
+    handler = WordChoiceHandler(wordchoice)
+    return handler.run(context, repodirpath, target, nonstop, nonword_delegate, jsonobj)
+
+
+WordChoiceResult = collections.namedtuple("WordChoiceResult", ["skip", "complete"])
+
+
+class WordChoiceHandler:
+    def __init__(self, wordchoice):
+        self.wordchoice = wordchoice
+
+    def run(self, context, repodirpath, target, nonstop, nonword_delegate, jsonobj):
+        while self.wordchoice:
+            result = self.select(
+                context, repodirpath, target, nonword_delegate, jsonobj
+            )
+            if result.completed and not nonstop:
+                return False
+            if result.skip:
+                return False
         return True
-    processrepo = context.interaction.get_confirmation(
-        "Do you want to process this repository?", defaultval=True
-    )
-    if not processrepo:
-        return False
-    for word in words:
-        print(f"Checking word {word}")
-        completed = interactive_new_word(
-            context, repodirpath, target, nonword_delegate, jsonobj, word,
+
+    def select(self, context, repodirpath, target, nonword_delegate, jsonobj):
+        choices = self.get_choices(
+            context, repodirpath, target, nonword_delegate, jsonobj
         )
-        print(f"Checked word {word} - {completed}")
-        if completed and not nonstop:
-            return False
-    return True
+        handler = context.interactive.make_choice(choices)
+        return handler()
+
+    def get_choices(self, context, repodirpath, target, nonword_delegate, jsonobj):
+        def skip_handler():
+            """
+            Finish processing early
+            """
+            return WordChoiceResult(skip=True, complete=False)
+
+        txt = "99) Skip repository."
+        choices = {txt: skip_handler}
+        for txt, word in self.wordchoice:
+            choices[txt] = WordHandler(
+                self, word, context, repodirpath, target, nonword_delegate, jsonobj
+            )
+        return choices
+
+    def remove(self, handler):
+        for txt, check in self.wordchoice:
+            if check is handler:
+                del self.wordchoice[txt]
+                return
+
+
+class WordHandler:
+    def __init__(
+        self,
+        choicehandler,
+        word,
+        context,
+        repodirpath,
+        target,
+        nonword_delegate,
+        jsonobj,
+    ):
+        self.choicehandler = choicehandler
+        self.word = word
+        self.context = context
+        self.repodirpath = repodirpath
+        self.target = target
+        self.nonword_delegate = nonword_delegate
+        self.jsonobj = jsonobj
+
+    def __call__(self):
+        completed = interactive_new_word(
+            self.context,
+            self.repodirpath,
+            self.target,
+            self.nonword_delegate,
+            self.jsonobj,
+            self.word,
+        )
+        self.choicehandler.remove(self)
+        return WordChoiceResult(skip=False, completed=completed)
 
 
 def interactive_new_word(context, repodirpath, target, nonword_delegate, jsonobj, word):
@@ -192,9 +257,7 @@ def interactive_new_word(context, repodirpath, target, nonword_delegate, jsonobj
             choices[text] = nonword_call
         if suggestion.is_typo:
             if suggestion.replacement:
-                text = (
-                    f"0) Suggest using {suggestion.replacement}, agree?"
-                )
+                text = f"0) Suggest using {suggestion.replacement}, agree?"
                 choices[text] = lambda: fix_word(
                     context.interaction,
                     word,
@@ -247,15 +310,18 @@ def get_sorted_words(interaction, jsonobj):
     order.sort(reverse=True)
     interaction.send(f"-- Candidates Found: {len(order)} --")
     maxwords = 50
-    for (priority, num_files, replacement), word in order[:maxwords]:
+    wordchoice = []
+    for num, ((priority, num_files, replacement), word) in enumerate(order[:maxwords]):
         if not replacement:
             replacement = "?"
-        interaction.send(f"{word} (-> {replacement} # files: {num_files})")
+        txt = f"{str(num).zfill(2)}) {word} (-> {replacement} # files: {num_files})"
+        interaction.send(txt)
+        wordchoice.append((txt, word))
     if len(order) > maxwords:
         interaction.send(f"-- Skipping {len(order) - maxwords} candidates. --")
     else:
         interaction.send("-- End of candidates. --")
-    return [word for _, word in order]
+    return wordchoice
 
 
 def check_websearch(obj, eng):
