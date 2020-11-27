@@ -106,7 +106,7 @@ def interactive_nonword_delegate(context, target):
 
     def handler():
         pullreq = update_nonwords(target)
-        context.interactive.send(
+        context.interaction.send(
             f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}"
         )
 
@@ -159,6 +159,7 @@ class WordChoiceHandler:
         self.wordchoice = wordchoice
 
     def run(self, context, repodirpath, target, nonstop, nonword_delegate, jsonobj):
+        print("selecting words")
         while self.wordchoice:
             result = self.select(
                 context, repodirpath, target, nonword_delegate, jsonobj
@@ -167,13 +168,15 @@ class WordChoiceHandler:
                 return False
             if result.skip:
                 return False
+        print("selecting words completed")
         return True
 
     def select(self, context, repodirpath, target, nonword_delegate, jsonobj):
         choices = self.get_choices(
             context, repodirpath, target, nonword_delegate, jsonobj
         )
-        handler = context.interactive.make_choice(choices)
+        print(f"make choice {len(choices)}")
+        handler = context.interaction.make_choice(choices)
         return handler()
 
     def get_choices(self, context, repodirpath, target, nonword_delegate, jsonobj):
