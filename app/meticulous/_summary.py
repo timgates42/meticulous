@@ -28,7 +28,7 @@ def display_summary_content(path):
     """
     count = 0
     regex = re.compile("\\s*[A-Za-z0-9]")
-    with io.open(path, "r", encoding="utf-8") as fobj:
+    with io.open(path, "r", encoding="utf-8", errors="replace") as fobj:
         for line in fobj:
             if regex.match(line):
                 print(line.rstrip("\r\n"))
