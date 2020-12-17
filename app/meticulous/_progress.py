@@ -17,7 +17,7 @@ def clear_progress(key):
     """
     Remove progress
     """
-    del PROGRESS[key]
+    PROGRESS.pop(key, None)
 
 
 def get_progress():
