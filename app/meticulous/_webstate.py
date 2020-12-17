@@ -269,7 +269,7 @@ class Input(Awaiter):
         """
         Obtain the request HTML
         """
-        textinput = """
+        textinput = f"""
 {self.content}<br/>
 <table><tr><td>
 <input type="text" name="textinput" value="" />
