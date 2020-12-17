@@ -14,6 +14,7 @@ from meticulous._storage import get_json_value, set_json_value
 from meticulous._submit import submit_handlers
 from meticulous._threadpool import get_pool
 
+MAX_BUFFER_REPOS = 10
 
 def update_workload(workload):
     """
@@ -28,8 +29,8 @@ def update_workload(workload):
     actions.update(submit_handlers().keys())
     load_count = count_names(workload, actions)
     print(f"Load Count: {load_count}")
-    for _ in range(4 - load_count):
-        result.append({"interactive": True, "name": "repository_load", "priority": 5})
+    for _ in range(MAX_BUFFER_REPOS - load_count):
+        result.append({"interactive": False, "name": "repository_load", "priority": 5})
     if count_names(workload, {"wait_threadpool"}) < 1:
         result.append({"interactive": True, "name": "wait_threadpool", "priority": 999})
     if count_names(workload, {"force_quit"}) < 1:
@@ -123,7 +124,7 @@ def prompt_quit(context):
             context.controller.quit()
         else:
             context.controller.add(
-                {"name": "repository_load", "interactive": True, "priority": 5}
+                {"name": "repository_load", "interactive": False, "priority": 5}
             )
 
     return handler
