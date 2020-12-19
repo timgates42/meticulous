@@ -65,6 +65,7 @@ input[type=button], input[type=submit], input[type=reset] {
   text-decoration: none;
   margin: 4px 2px;
   cursor: pointer;
+  -webkit-appearance: none;
 }
 
 
