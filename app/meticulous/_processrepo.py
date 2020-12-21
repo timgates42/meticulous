@@ -515,12 +515,11 @@ def fix_word(interaction, word, details, newspell, repopath):
         lines = []
         with io.open(filename, "r", encoding="utf-8") as fobj:
             for line in fobj:
-                line = line.rstrip("\r\n")
                 output = perform_replacement(line, word, newspell)
                 lines.append(output if output is not None else line)
         with io.open(filename, "w", encoding="utf-8") as fobj:
             for line in lines:
-                print(line, file=fobj)
+                fobj.write(line)
         git = local["git"]
         filepath = Path(filename)
         relpath = str(filepath.relative_to(repopath))
