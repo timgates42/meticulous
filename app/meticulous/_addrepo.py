@@ -38,6 +38,7 @@ def addrepo_handlers():
         "repository_load": repository_load,
         "repository_checkout": repository_checkout,
         "repository_summary": repository_summary,
+        "repository_end": repository_end,
     }
 
 
@@ -49,9 +50,8 @@ def repository_load(context):
     def handler():
         reponame = non_interactive_pickrepo()
         if reponame is None:
-            context.interaction.send("No more repositories to examine.")
             context.controller.add(
-                {"name": "prompt_quit", "interactive": True, "priority": 65}
+                {"name": "repository_end", "interactive": True, "priority": 65}
             )
         else:
             context.controller.add(
@@ -83,6 +83,18 @@ def repository_checkout(context):
             }
         )
 
+    return handler
+
+
+def repository_end(context):
+    """
+    Report exhaustion of source repositories
+    """
+
+    def handler():
+        context.interaction.send("No more repositories")
+        context.interaction.get_confirmation("Enjoy meticulous?")
+        context.controller.quit()
     return handler
 
 
