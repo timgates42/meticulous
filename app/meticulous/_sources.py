@@ -18,6 +18,11 @@ SOURCE_MARKDOWN_URLS = [
     "https://raw.githubusercontent.com/kozross/awesome-c/master/README.md",
     "https://raw.githubusercontent.com/aleksandar-todorovic/awesome-c/master/README.md",
     "https://raw.githubusercontent.com/uhub/awesome-c/master/README.md",
+    "https://raw.githubusercontent.com/mrezak/awesome-python-1/master/README.md",
+    "https://raw.githubusercontent.com/sindresorhus/awesome/master/README.md",
+    "https://raw.githubusercontent.com/krishnasumanthm/Awesome-Python/master/README.md",
+    "https://raw.githubusercontent.com/mahmoud/awesome-python-applications/master/README.md",
+    "https://raw.githubusercontent.com/trananhkma/fucking-awesome-python/master/README.md",
 ]
 
 # Organisations or Users who have requested to be excluded from typo fixes
