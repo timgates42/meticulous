@@ -26,4 +26,4 @@ def remove_repo_for(repo, repodir, confirm=True):
         option = "Yes"
     if option == "Yes":
         if os.path.isdir(repodir):
-            shutil.rmtree(repodir)
+            shutil.rmtree(repodir, ignore_errors=True)
