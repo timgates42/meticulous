@@ -4,6 +4,8 @@ Main processing for meticulous
 from __future__ import absolute_import, division, print_function
 
 import io
+import os
+import pathlib
 import re
 import sys
 from pathlib import Path
@@ -365,6 +367,8 @@ def push_commit(repodir, add_word):
     Create commit and push
     """
     git = local["git"]
+    # plumbum bug workaround
+    os.chdir(pathlib.Path.home())
     with local.cwd(repodir):
         to_branch = git("symbolic-ref", "--short", "HEAD").strip()
         from_branch = f"bugfix_typo_{add_word.replace(' ', '_')}"
@@ -380,6 +384,8 @@ def show_path(reponame, reposave, path):  # pylint: disable=unused-argument
     print("Opening editor")
     editor = local[get_editor()]
     repodir = reposave["repodir"]
+    # plumbum bug workaround
+    os.chdir(pathlib.Path.home())
     with local.cwd(repodir):
         _ = editor[str(path)] & FG
 
@@ -404,6 +410,8 @@ def get_typo(repodir):
     del_lines = []
     add_lines = []
     file_paths = []
+    # plumbum bug workaround
+    os.chdir(pathlib.Path.home())
     with local.cwd(repodir):
         output = git("diff", "--staged")
         for line in output.splitlines():

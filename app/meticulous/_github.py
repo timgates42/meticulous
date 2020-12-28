@@ -3,6 +3,8 @@ Handlers for checking existing forks and creating new ones.
 """
 
 import logging
+import os
+import pathlib
 
 import github
 from plumbum import local
@@ -96,6 +98,8 @@ def checkout(repo, target):
     if clone_target.exists():
         return
     git = local["/usr/bin/git"]
+    # plumbum bug workaround
+    os.chdir(pathlib.Path.home())
     with local.cwd(str(target)):
         git(
             "clone",

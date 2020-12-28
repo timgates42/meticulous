@@ -5,6 +5,8 @@ Work through nonwords to find a typo
 import collections
 import io
 import json
+import os
+import pathlib
 import re
 from pathlib import Path
 
@@ -151,8 +153,7 @@ def interactive_task_collect_nonwords_run(
     return handler.run(context, repodirpath, target, nonstop, nonword_delegate, jsonobj)
 
 
-WordChoiceResult = collections.namedtuple("WordChoiceResult", ["skip",
-    "completed"])
+WordChoiceResult = collections.namedtuple("WordChoiceResult", ["skip", "completed"])
 
 
 class WordChoiceHandler:
@@ -523,6 +524,8 @@ def fix_word(interaction, word, details, newspell, repopath):
         git = local["git"]
         filepath = Path(filename)
         relpath = str(filepath.relative_to(repopath))
+        # plumbum bug workaround
+        os.chdir(pathlib.Path.home())
         with local.cwd(str(repopath)):
             _ = git["add"][relpath] & FG
         file_paths.append(relpath)
