@@ -7,6 +7,7 @@ import json
 import random
 import subprocess  # noqa=S404 # nosec
 import sys
+import threading
 
 import unanimous
 from github import GithubException
@@ -26,6 +27,8 @@ from meticulous._storage import get_json_value, set_json_value
 from meticulous._summary import display_repo_intro
 from meticulous._websearch import get_suggestion
 
+LOCK = threading.Lock()
+
 
 def addrepo_handlers():
     """
@@ -35,6 +38,7 @@ def addrepo_handlers():
         "repository_load": repository_load,
         "repository_checkout": repository_checkout,
         "repository_summary": repository_summary,
+        "repository_end": repository_end,
     }
 
 
@@ -44,11 +48,10 @@ def repository_load(context):
     """
 
     def handler():
-        reponame = interactive_pickrepo()
+        reponame = non_interactive_pickrepo()
         if reponame is None:
-            context.interaction.send("No more repositories to examine.")
             context.controller.add(
-                {"name": "prompt_quit", "interactive": True, "priority": 65}
+                {"name": "repository_end", "interactive": True, "priority": 65}
             )
         else:
             context.controller.add(
@@ -83,6 +86,18 @@ def repository_checkout(context):
     return handler
 
 
+def repository_end(context):
+    """
+    Report exhaustion of source repositories
+    """
+
+    def handler():
+        context.interaction.send("No more repositories")
+        context.interaction.get_confirmation("Enjoy meticulous?")
+        context.controller.quit()
+    return handler
+
+
 def repository_summary(context):
     """
     Task to pull a repository
@@ -114,7 +129,7 @@ def interactive_add_one_new_repo(target):
     """
     Locate a new repository and add it to the available set.
     """
-    repo = interactive_pickrepo()
+    repo = non_interactive_pickrepo()
     if repo is None:
         return None
     noninteractive_checkout(target, repo)
@@ -135,42 +150,44 @@ def noninteractive_checkout(target, repo):
     return repo
 
 
-def interactive_pickrepo():
+def non_interactive_pickrepo():
     """
     Select next free repo
     """
-    repository_forked = get_json_value("repository_forked", {})
-    for orgrepo in obtain_sources():
-        _, origrepo = orgrepo.split("/", 1)
-        if origrepo in repository_forked:
-            continue
-        try:
-            orgrepo = get_true_orgrepo(orgrepo)
-        except GithubException:
-            continue
-        _, repo = orgrepo.split("/", 1)
-        if repo in repository_forked:
-            continue
-        print(f"Checking {orgrepo}")
-        if check_forked(orgrepo):
+    forking = []
+    return_repo = None
+    with LOCK:
+        repository_forked = get_json_value("repository_forked", {})
+        for orgrepo in obtain_sources():
+            _, origrepo = orgrepo.split("/", 1)
+            if origrepo in repository_forked:
+                continue
+            try:
+                orgrepo = get_true_orgrepo(orgrepo)
+            except GithubException:
+                continue
+            _, repo = orgrepo.split("/", 1)
+            if repo in repository_forked:
+                continue
+            if check_forked(orgrepo):
+                repository_forked[origrepo] = True
+                repository_forked[repo] = True
+                set_json_value("repository_forked", repository_forked)
+                continue
+            forking.append(orgrepo)
+            if is_archived(orgrepo):
+                repository_forked[origrepo] = True
+                repository_forked[repo] = True
+                set_json_value("repository_forked", repository_forked)
+                continue
             repository_forked[origrepo] = True
             repository_forked[repo] = True
             set_json_value("repository_forked", repository_forked)
-            continue
-        print(f"Have not forked {orgrepo}")
-        print(f"Forking {orgrepo}")
+            return_repo = repo
+            break
+    for orgrepo in forking:
         fork(orgrepo)
-        if is_archived(orgrepo):
-            print(f"Skipping archived repo {orgrepo}")
-            repository_forked[origrepo] = True
-            repository_forked[repo] = True
-            set_json_value("repository_forked", repository_forked)
-            continue
-        repository_forked[origrepo] = True
-        repository_forked[repo] = True
-        set_json_value("repository_forked", repository_forked)
-        return repo
-    return None
+    return return_repo
 
 
 def spelling_check(repo, target):
