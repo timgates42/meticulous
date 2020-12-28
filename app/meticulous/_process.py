@@ -4,6 +4,7 @@ Main processing for meticulous
 from __future__ import absolute_import, division, print_function
 
 import os
+import pathlib
 import sys
 from pathlib import Path
 
@@ -201,6 +202,8 @@ def examine_repo(repodir):
     """
     print("Opening editor")
     editor = local[get_editor()]
+    # plumbum bug workaround
+    os.chdir(pathlib.Path.home())
     with local.cwd(repodir):
         _ = editor["spelling.txt"] & FG
 

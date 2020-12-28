@@ -4,6 +4,7 @@ Add non-words to the unanimous repository
 
 import io
 import os
+import pathlib
 import random
 import re
 import sys
@@ -75,15 +76,21 @@ def update_nonwords(target):
     path = get_unanimous(target)
     git = local["git"]
     pyexe = local[sys.executable]
+    # plumbum bug workaround
+    os.chdir(pathlib.Path.home())
     with local.cwd(str(path.parent)):
         git("add", path.name)
         git("commit", "-m", "update nonwords")
         git("pull", "--no-edit")
+    # plumbum bug workaround
+    os.chdir(pathlib.Path.home())
     with local.cwd(str(path.parent / "app")):
         pyexe("-m", "unanimous")
     num = random.randrange(100000, 999999)  # noqa: S311,DUO102 # nosec
     to_branch = "master"
     from_branch = f"nonwords_{num}"
+    # plumbum bug workaround
+    os.chdir(pathlib.Path.home())
     with local.cwd(str(path.parent)):
         git("add", ".")
         git("commit", "-m", "update nonwords")
@@ -102,6 +109,8 @@ def get_nonword_count(target):
     regex = re.compile("[+][^+]")
     path = get_unanimous(target)
     git = local["git"]
+    # plumbum bug workaround
+    os.chdir(pathlib.Path.home())
     with local.cwd(str(path.parent)):
         output = git("diff", path.name)
     return len([line for line in output.splitlines() if regex.match(line)])
