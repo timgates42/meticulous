@@ -465,7 +465,7 @@ def perform_replacement(line, word, replacement):
     """
     Run the provided word replacement
     """
-    regex = re.compile(f"\\b({re.escape(word)})\\b")
+    regex = re.compile(f"(?:^|[^a-zA-Z])({re.escape(word)})(?:$|[^a-zA-Z])", re.I)
     if not regex.search(line):
         return None
     result = []
@@ -474,7 +474,10 @@ def perform_replacement(line, word, replacement):
         match_start = match.start(1)
         match_end = match.end(1)
         result.append(line[pos:match_start])
-        result.append(replacement)
+        if line[match_start:match_start + 1].isupper():
+            result.append(replacement.capitalize())
+        else:
+            result.append(replacement)
         pos = match_end
     result.append(line[pos:])
     return "".join(result)
