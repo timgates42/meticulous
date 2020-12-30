@@ -465,7 +465,13 @@ def perform_replacement(line, word, replacement):
     """
     Run the provided word replacement
     """
-    regex = re.compile(f"(?:^|[^a-zA-Z])({re.escape(word)})(?:$|[^a-zA-Z])", re.I)
+    joiner = ""
+    regexstr = f"(?:^|[^a-zA-Z])({re.escape(word)})(?:$|[^a-zA-Z])"
+    if isinstance(line, bytes):
+        regexstr = regexstr.encode("utf-8")
+        joiner = b""
+        replacement = replacement.encode("utf-8")
+    regex = re.compile(regexstr, re.I)
     if not regex.search(line):
         return None
     result = []
@@ -480,7 +486,7 @@ def perform_replacement(line, word, replacement):
             result.append(replacement)
         pos = match_end
     result.append(line[pos:])
-    return "".join(result)
+    return joiner.join(result)
 
 
 def handle_nonword(word, target, nonword_delegate):  # pylint: disable=unused-argument
@@ -516,14 +522,7 @@ def fix_word(interaction, word, details, newspell, repopath):
     )
     file_paths = []
     for filename in files:
-        lines = []
-        with io.open(filename, "r", encoding="utf-8") as fobj:
-            for line in fobj:
-                output = perform_replacement(line, word, newspell)
-                lines.append(output if output is not None else line)
-        with io.open(filename, "w", encoding="utf-8") as fobj:
-            for line in lines:
-                fobj.write(line)
+        fix_word_in_file(filename, word, newspell)
         git = local["git"]
         filepath = Path(filename)
         relpath = str(filepath.relative_to(repopath))
@@ -534,6 +533,20 @@ def fix_word(interaction, word, details, newspell, repopath):
         file_paths.append(relpath)
     add_repo_save(str(repopath), newspell, word, file_paths)
     return True
+
+
+def fix_word_in_file(filename, word, newspell):
+    """
+    Perform one file correction
+    """
+    lines = []
+    with open(filename, "rb") as fobj:
+        for line in fobj:
+            output = perform_replacement(line, word, newspell)
+            lines.append(output if output is not None else line)
+    with open(filename, "wb") as fobj:
+        for line in lines:
+            fobj.write(line)
 
 
 def add_repo_save(repodir, add_word, del_word, file_paths):
