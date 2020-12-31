@@ -522,7 +522,8 @@ def fix_word(interaction, word, details, newspell, repopath):
     )
     file_paths = []
     for filename in files:
-        fix_word_in_file(filename, word, newspell)
+        if not fix_word_in_file(filename, word, newspell):
+            continue
         git = local["git"]
         filepath = Path(filename)
         relpath = str(filepath.relative_to(repopath))
@@ -531,7 +532,8 @@ def fix_word(interaction, word, details, newspell, repopath):
         with local.cwd(str(repopath)):
             _ = git["add"][relpath] & FG
         file_paths.append(relpath)
-    add_repo_save(str(repopath), newspell, word, file_paths)
+    if file_paths:
+        add_repo_save(str(repopath), newspell, word, file_paths)
     return True
 
 
@@ -539,14 +541,22 @@ def fix_word_in_file(filename, word, newspell):
     """
     Perform one file correction
     """
+    if word == newspell:
+        return False
     lines = []
+    fixed = False
     with open(filename, "rb") as fobj:
         for line in fobj:
             output = perform_replacement(line, word, newspell)
-            lines.append(output if output is not None else line)
+            if output is not None:
+                lines.append(output)
+                fixed = True
+            else:
+                lines.append(line)
     with open(filename, "wb") as fobj:
         for line in lines:
             fobj.write(line)
+    return fixed
 
 
 def add_repo_save(repodir, add_word, del_word, file_paths):
