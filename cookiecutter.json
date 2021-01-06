@@ -47,5 +47,6 @@
     "package_data": "",
     "extra_manifest": "",
     "test_requires": "",
-    "latest_python": "3.8"
+    "latest_python": "3.9",
+    "supported_python": "3.9 3.8 3.7 3.6"
 }

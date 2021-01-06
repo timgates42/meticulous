@@ -10,9 +10,7 @@ source "${BASEDIR}/ci/in_docker/prepare.sh"
 
 cd "${BASEDIR}/app"
 rm -rf dist build
-for PYVER in ${PYTHONVERS} ; do
-  "python${PYVER}" setup.py sdist bdist_wheel
-done
-python3.8 -m twine check dist/*
-python3.8 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-python3.8 -m twine upload dist/*
+"python${PYVER}" setup.py sdist bdist_wheel
+"python${PYVER}" -m twine check dist/*
+"python${PYVER}" -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+"python${PYVER}" -m twine upload dist/*
