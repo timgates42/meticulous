@@ -6,7 +6,7 @@ THISDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASEDIR="$( dirname "${THISDIR}" )"
 
 : [ "${PYVER:=3.9}" ]
-PYVERS=( "3.9 3.8 3.7 3.6" )
+PYVERS=( "3.9" "3.8" "3.7" "3.6" )
 
 if ! command -v docker ; then
     echo 'Docker is missing!' >&2
