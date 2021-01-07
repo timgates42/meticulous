@@ -3,6 +3,7 @@ Alternative way of running meticulous in a browser
 """
 
 import flask
+
 from meticulous._webstate import STATE
 
 APP = flask.Flask("meticulous")
