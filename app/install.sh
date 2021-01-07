@@ -13,7 +13,7 @@ apk add --no-cache \
     git \
     libxslt-dev \
     libffi-dev \
-    openssl-dev
+    openssl-dev gcc musl-dev postgresql-dev
 
 cd "${BASEDIR}/pip/${PYVER}"
 for reqfile in */requirements.txt ; do
