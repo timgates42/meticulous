@@ -95,6 +95,7 @@ def repository_end(context):
         context.interaction.send("No more repositories")
         context.interaction.get_confirmation("Enjoy meticulous?")
         context.controller.quit()
+
     return handler
 
 

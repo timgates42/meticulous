@@ -43,9 +43,7 @@ class StateHandler(Interaction):
             if self.await_key is not None:
                 content += self.await_key.get_html()
             else:
-                progress = "<br />".join(
-                    conv.convert(msg) for msg in get_progress()
-                )
+                progress = "<br />".join(conv.convert(msg) for msg in get_progress())
                 content += f"""
 No interaction required yet, will reload.<br />
 {progress}
@@ -293,8 +291,7 @@ class Choice(Awaiter):
         options = list(enumerate(sorted(choices.keys())))
         self.choices = {index: choices[txt] for index, txt in options}
         self.options = "\n".join(
-            f'<option value="{index}">{txt}</option>'
-            for index, txt in options
+            f'<option value="{index}">{txt}</option>' for index, txt in options
         )
 
     def handle(self, state):

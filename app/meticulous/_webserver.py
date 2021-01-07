@@ -8,7 +8,7 @@ from meticulous._webstate import STATE
 APP = flask.Flask("meticulous")
 
 
-@APP.route("/", methods=['POST', 'GET'])
+@APP.route("/", methods=["POST", "GET"])
 def index():
     """
     Default route

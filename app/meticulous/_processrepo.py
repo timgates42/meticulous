@@ -480,7 +480,7 @@ def perform_replacement(line, word, replacement):
         match_start = match.start(1)
         match_end = match.end(1)
         result.append(line[pos:match_start])
-        if line[match_start:match_start + 1].isupper():
+        if line[match_start : match_start + 1].isupper():
             result.append(replacement.capitalize())
         else:
             result.append(replacement)

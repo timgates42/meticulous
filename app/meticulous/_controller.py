@@ -33,7 +33,8 @@ class Controller:
         else:
             self._threadpool.add(task, self)
         add_progress(
-            ("tasks",), repr(self._input_queue),
+            ("tasks",),
+            repr(self._input_queue),
         )
         with self.condition:
             self.condition.notify()
@@ -89,10 +90,12 @@ class Controller:
         """
         task = self._input_queue.pop()
         add_progress(
-            ("tasks",), f"Pending {self._input_queue!r}",
+            ("tasks",),
+            f"Pending {self._input_queue!r}",
         )
         add_progress(
-            ("running",), f"Running {task!r}",
+            ("running",),
+            f"Running {task!r}",
         )
         factory = self._handlers[task["name"]]
         context = Context(controller=self, taskjson=task, interaction=interaction)
