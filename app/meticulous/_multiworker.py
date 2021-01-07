@@ -16,6 +16,7 @@ from meticulous._threadpool import get_pool
 
 MAX_BUFFER_REPOS = 10
 
+
 def update_workload(workload):
     """
     Ensure the minimum number of repository tasks are present.
@@ -227,7 +228,7 @@ def main(target):
 
 def multiworker_core(interaction, target):
     """
-    Support for different kinds of interaction with multiworker processing
+    Support for different kinds of interaction with multiple worker processing
     """
     key = "multiworker_workload"
     workload = get_json_value(key, deflt=[])

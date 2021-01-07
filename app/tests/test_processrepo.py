@@ -1,5 +1,5 @@
 """
-Test processrepo calls
+Test calls for processing github repositories
 """
 
 import os
