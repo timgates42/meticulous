@@ -5,13 +5,14 @@ Work through nonwords to find a typo
 import collections
 import io
 import json
+import logging
 import os
 import pathlib
 import re
 from pathlib import Path
 
 from colorama import Fore, Style
-from plumbum import FG, local
+from plumbum import FG, ProcessExecutionError, local
 from spelling.check import context_to_filename
 from workflow.engine import GenericWorkflowEngine
 from workflow.errors import HaltProcessing
@@ -530,9 +531,13 @@ def fix_word(interaction, word, details, newspell, repopath):
         relpath = str(filepath.relative_to(repopath))
         # plumbum bug workaround
         os.chdir(pathlib.Path.home())
-        with local.cwd(str(repopath)):
-            _ = git["add"][relpath] & FG
-        file_paths.append(relpath)
+        try:
+            with local.cwd(str(repopath)):
+                _ = git["add"][relpath] & FG
+        except ProcessExecutionError:
+            logging.exception("Failed to update %s", relpath)
+        else:
+            file_paths.append(relpath)
     if file_paths:
         add_repo_save(str(repopath), newspell, word, file_paths)
     return True
