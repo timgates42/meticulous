@@ -402,9 +402,7 @@ def non_interactive_submit_commit(reponame, reposave):
     Push up a PR from a commit
     """
     try:
-        title, body, from_branch, to_branch = non_interactive_prepare_commit(
-            reposave
-        )
+        title, body, from_branch, to_branch = non_interactive_prepare_commit(reposave)
         body += f"\n{get_note('pull request')}"
         pullreq = create_pr(reponame, title, body, from_branch, to_branch)
         return f"Created PR #{pullreq.number} view at {pullreq.html_url}"
