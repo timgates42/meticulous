@@ -22,7 +22,7 @@ def main(target):
     """
     Alternative way of running meticulous in a browser
     """
-    host = get_input("Listen Address: ", "0.0.0.0")
+    host = get_input("Listen Address: ", "0.0.0.0")  # nosec=B104
     port = int(get_input("Listen Port: ", "3080"))
     run_app(target, host, port)
 
