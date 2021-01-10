@@ -212,6 +212,14 @@ def issue_and_branch_for(reponame, reposave):
     created the PR this can avoid wasting CI processing if the issue will never
     be accepted and is still quite convenient.
     """
+    no_issues = Path("__no_issues__.txt")
+    repodir = reposave["repodir"]
+    repodirpath = Path(repodir)
+    no_issues_path = repodirpath / no_issues
+    if no_issues_path.is_file():
+        plain_pr_for(reponame, reposave)
+        return
+    make_a_commit(reponame, reposave, False)
     _, _, from_branch, _ = non_interactive_prepare_commit(reposave)
     api = get_api()
     user_org = api.get_user().login
