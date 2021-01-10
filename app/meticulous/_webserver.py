@@ -4,6 +4,7 @@ Alternative way of running meticulous in a browser
 
 import flask
 
+from meticulous._input import get_input
 from meticulous._webstate import STATE
 
 APP = flask.Flask("meticulous")
@@ -21,8 +22,17 @@ def main(target):
     """
     Alternative way of running meticulous in a browser
     """
+    host = get_input("Listen Address: ", "0.0.0.0")
+    port = int(get_input("Listen Port: ", "3080"))
+    run_app(target, host, port)
+
+
+def run_app(target, host, port):
+    """
+    Alternative way of running meticulous in a browser
+    """
     STATE.start(target)
     try:
-        APP.run(host="0.0.0.0", port=3080)
+        APP.run(host=host, port=port)
     finally:
         STATE.stop()
