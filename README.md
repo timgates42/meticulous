@@ -41,6 +41,7 @@ $ pip install meticulous
 - colorama
 - psycopg2
 - ansi2html
+- flask
 
 
 ## Download from PyPI.org
