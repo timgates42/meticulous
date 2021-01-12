@@ -169,6 +169,7 @@ class WordChoiceHandler:
     """
     State for picking a word from a selection
     """
+
     def __init__(self, wordchoice):
         self.wordchoice = wordchoice
 
@@ -178,9 +179,7 @@ class WordChoiceHandler:
         """
         print("selecting words")
         while self.wordchoice:
-            result = self.select(
-                state, jsonobj
-            )
+            result = self.select(state, jsonobj)
             if result.completed and not nonstop:
                 return False
             if result.skip:
@@ -192,9 +191,7 @@ class WordChoiceHandler:
         """
         Provide a selection of options for choice
         """
-        choices = self.get_choices(
-            state, jsonobj
-        )
+        choices = self.get_choices(state, jsonobj)
         print(f"make choice {len(choices)}")
         handler = state.context.interaction.make_choice(choices)
         return handler()
@@ -203,6 +200,7 @@ class WordChoiceHandler:
         """
         Prepare the list of options
         """
+
         def skip_handler():
             """
             Finish processing early
@@ -212,9 +210,7 @@ class WordChoiceHandler:
         txt = "99) Skip repository."
         choices = {txt: skip_handler}
         for txt, word in self.wordchoice:
-            choices[txt] = WordHandler(
-                self, word, state, jsonobj
-            )
+            choices[txt] = WordHandler(self, word, state, jsonobj)
         return choices
 
     def remove(self, word):
