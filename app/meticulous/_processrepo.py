@@ -109,9 +109,7 @@ def interactive_nonword_delegate(interaction, target):
 
     def handler():
         pullreq = update_nonwords(target)
-        interaction.send(
-            f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}"
-        )
+        interaction.send(f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}")
 
     return handler
 
