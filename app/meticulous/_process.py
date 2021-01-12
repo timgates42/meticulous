@@ -24,7 +24,7 @@ from meticulous._input import (
     make_choice,
     make_simple_choice,
 )
-from meticulous._multiworker import clear_work_queue
+from meticulous._multiworker import KeyboardInteraction, clear_work_queue
 from meticulous._multiworker import main as multiworker_main
 from meticulous._multiworker import show_work_queue
 from meticulous._nonword import load_recent_non_words
@@ -131,7 +131,9 @@ def total_annihilation(target):
     if not jsonpath.exists():
         print("Checking spelling...")
         spelling_check(repodir, target)
-    interactive_task_collect_nonwords(reponame, target, nonstop=True)
+    interactive_task_collect_nonwords(
+        KeyboardInteraction(), reponame, target, nonstop=True
+    )
 
 
 def remove_repo_selection(target):  # pylint: disable=unused-argument
@@ -275,7 +277,7 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
         print(f"Unexpected number of repostories - {count}")
         return
     reponame = next(iter(repository_list.keys()))
-    interactive_task_collect_nonwords(reponame, obj.target)
+    interactive_task_collect_nonwords(KeyboardInteraction(), reponame, obj.target)
 
 
 def task_submit(obj, eng):  # pylint: disable=unused-argument

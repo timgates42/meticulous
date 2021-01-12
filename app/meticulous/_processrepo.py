@@ -33,9 +33,9 @@ class NonwordState:  # pylint: disable=too-few-public-methods
     """
 
     def __init__(  # pylint: disable=too-many-arguments
-        self, context, target, word, details, repopath, nonword_delegate
+        self, interaction, target, word, details, repopath, nonword_delegate
     ):
-        self.context = context
+        self.interaction = interaction
         self.target = target
         self.word = word
         self.details = details
@@ -62,7 +62,7 @@ def collect_nonwords(context):
         reponame = context.taskjson["reponame"]
         if reponame in get_json_value("repository_map", {}):
             interactive_task_collect_nonwords(
-                context,
+                context.interaction,
                 reponame,
                 target,
                 nonword_delegate=noninteractive_nonword_delegate(context),
@@ -102,14 +102,14 @@ def noninteractive_nonword_delegate(context):
     return handler
 
 
-def interactive_nonword_delegate(context, target):
+def interactive_nonword_delegate(interaction, target):
     """
     Obtain a basic interactive nonword update
     """
 
     def handler():
         pullreq = update_nonwords(target)
-        context.interaction.send(
+        interaction.send(
             f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}"
         )
 
@@ -117,25 +117,25 @@ def interactive_nonword_delegate(context, target):
 
 
 def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
-    context, reponame, target, nonword_delegate=None, nonstop=False
+    interaction, reponame, target, nonword_delegate=None, nonstop=False
 ):
     """
     Saves nonwords until a typo is found
     """
     if nonword_delegate is None:
-        nonword_delegate = interactive_nonword_delegate(context, target)
+        nonword_delegate = interactive_nonword_delegate(interaction, target)
     key = "repository_map"
     repository_map = get_json_value(key, {})
     repodir = repository_map[reponame]
     repodirpath = Path(repodir)
     jsonpath = repodirpath / "spelling.json"
     if not jsonpath.is_file():
-        context.interaction.send(f"Unable to locate spelling at {jsonpath}")
+        interaction.send(f"Unable to locate spelling at {jsonpath}")
         return
     with io.open(jsonpath, "r", encoding="utf-8") as fobj:
         jsonobj = json.load(fobj)
     state = NonwordState(
-        context=context,
+        interaction=interaction,
         target=target,
         word=None,
         details=None,
@@ -144,7 +144,7 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
     )
     completed = interactive_task_collect_nonwords_run(state, nonstop, jsonobj)
     if completed:
-        context.interaction.send(
+        interaction.send(
             f"{Fore.YELLOW}Found all words" f" for {reponame}!{Style.RESET_ALL}"
         )
 
@@ -153,7 +153,7 @@ def interactive_task_collect_nonwords_run(state, nonstop, jsonobj):
     """
     Given the json state - saves nonwords until a typo is found
     """
-    wordchoice = get_sorted_words(state.context.interaction, jsonobj)
+    wordchoice = get_sorted_words(state.interaction, jsonobj)
     handler = WordChoiceHandler(wordchoice)
     return handler.run(
         state,
@@ -193,7 +193,7 @@ class WordChoiceHandler:
         """
         choices = self.get_choices(state, jsonobj)
         print(f"make choice {len(choices)}")
-        handler = state.context.interaction.make_choice(choices)
+        handler = state.interaction.make_choice(choices)
         return handler()
 
     def get_choices(self, state, jsonobj):
@@ -256,7 +256,7 @@ def interactive_new_word(state, jsonobj, word):
     """
     details = jsonobj[word]
     suggestion = details.get("suggestion_obj")
-    show_word(state.context.interaction, word, details)
+    show_word(state.interaction, word, details)
 
     def nonword_call():
         """
@@ -266,7 +266,7 @@ def interactive_new_word(state, jsonobj, word):
 
     choices = {
         "1) Typo": lambda: (
-            handle_typo(state.context.interaction, word, details, state.repopath)
+            handle_typo(state.interaction, word, details, state.repopath)
         ),
         "2) Non-word": nonword_call,
         "3) Skip": lambda: False,
@@ -279,13 +279,13 @@ def interactive_new_word(state, jsonobj, word):
             if suggestion.replacement:
                 text = f"0) Suggest using {suggestion.replacement}, agree?"
                 choices[text] = lambda: fix_word(
-                    state.context.interaction,
+                    state.interaction,
                     word,
                     details,
                     suggestion.replacement,
                     state.repopath,
                 )
-    result = state.context.interaction.make_choice(choices)
+    result = state.interaction.make_choice(choices)
     return result()
 
 
@@ -296,7 +296,7 @@ def interactive_old_word(state, jsonobj, word):
     my_engine = GenericWorkflowEngine()
     my_engine.callbacks.replace([check_websearch, is_nonword, is_typo, what_now])
     newstate = NonwordState(
-        context=state.context,
+        interaction=state.interaction,
         target=state.target,
         word=word,
         details=jsonobj[word],
@@ -351,9 +351,9 @@ def check_websearch(obj, eng):
     suggestion = obj.details.get("suggestion_obj")
     if suggestion is None:
         return
-    show_word(obj.context.interaction, obj.word, obj.details)
+    show_word(obj.interaction, obj.word, obj.details)
     if suggestion.is_nonword:
-        is_non_word_check = obj.context.interaction.get_confirmation(
+        is_non_word_check = obj.interaction.get_confirmation(
             "Web search suggests it is a non-word, agree?"
         )
         if is_non_word_check:
@@ -368,13 +368,13 @@ def check_websearch(obj, eng):
                 )
                 for prefix, suffix in [("", ""), (Fore.CYAN, Style.RESET_ALL)]
             ]
-            obj.context.interaction.send(msgs[-1])
-            suggestion_check = obj.context.interaction.get_confirmation(
+            obj.interaction.send(msgs[-1])
+            suggestion_check = obj.interaction.get_confirmation(
                 msgs[0], defaultval=False
             )
             if suggestion_check:
                 fix_word(
-                    obj.context.interaction,
+                    obj.interaction,
                     obj.word,
                     obj.details,
                     suggestion.replacement,
@@ -386,12 +386,12 @@ def check_websearch(obj, eng):
             (f"Web search suggests using {prefix}" f"typo{suffix}, agree?")
             for prefix, suffix in [("", ""), (Fore.RED, Style.RESET_ALL)]
         ]
-        obj.context.interaction.send(msgs[-1])
-        last_suggestion_check = obj.context.interaction.get_confirmation(
+        obj.interaction.send(msgs[-1])
+        last_suggestion_check = obj.interaction.get_confirmation(
             msgs[0], defaultval=False
         )
         if last_suggestion_check:
-            handle_typo(obj.context.interaction, obj.word, obj.details, obj.repopath)
+            handle_typo(obj.interaction, obj.word, obj.details, obj.repopath)
             obj.done = True
             eng.halt("found typo")
 
@@ -400,8 +400,8 @@ def is_nonword(obj, eng):
     """
     Quick initial check to see if it is a nonword.
     """
-    show_word(obj.context.interaction, obj.word, obj.details)
-    if obj.context.interaction.get_confirmation("Is non-word?"):
+    show_word(obj.interaction, obj.word, obj.details)
+    if obj.interaction.get_confirmation("Is non-word?"):
         handle_nonword(obj.word, obj.target, obj.nonword_delegate)
         eng.halt("found nonword")
 
@@ -410,9 +410,9 @@ def is_typo(obj, eng):
     """
     Quick initial check to see if it is a typo.
     """
-    show_word(obj.context.interaction, obj.word, obj.details)
-    if obj.context.interaction.get_confirmation("Is it typo?"):
-        handle_typo(obj.context.interaction, obj.word, obj.details, obj.repopath)
+    show_word(obj.interaction, obj.word, obj.details)
+    if obj.interaction.get_confirmation("Is it typo?"):
+        handle_typo(obj.interaction, obj.word, obj.details, obj.repopath)
         obj.done = True
         eng.halt("found typo")
 
@@ -421,8 +421,8 @@ def what_now(obj, eng):
     """
     Check to see what else to do.
     """
-    show_word(obj.context.interaction, obj.word, obj.details)
-    obj.context.interaction.send("Todo what now options?")
+    show_word(obj.interaction, obj.word, obj.details)
+    obj.interaction.send("Todo what now options?")
     eng.halt("what now?")
 
 
