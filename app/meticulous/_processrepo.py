@@ -156,11 +156,8 @@ def interactive_task_collect_nonwords_run(state, nonstop, jsonobj):
     wordchoice = get_sorted_words(state.context.interaction, jsonobj)
     handler = WordChoiceHandler(wordchoice)
     return handler.run(
-        state.context,
-        state.repopath,
-        state.target,
+        state,
         nonstop,
-        state.nonword_delegate,
         jsonobj,
     )
 
@@ -175,14 +172,14 @@ class WordChoiceHandler:
     def __init__(self, wordchoice):
         self.wordchoice = wordchoice
 
-    def run(self, context, repodirpath, target, nonstop, nonword_delegate, jsonobj):
+    def run(self, state, nonstop, jsonobj):
         """
         Main word selection handler.
         """
         print("selecting words")
         while self.wordchoice:
             result = self.select(
-                context, repodirpath, target, nonword_delegate, jsonobj
+                state, jsonobj
             )
             if result.completed and not nonstop:
                 return False
@@ -191,15 +188,21 @@ class WordChoiceHandler:
         print("selecting words completed")
         return True
 
-    def select(self, context, repodirpath, target, nonword_delegate, jsonobj):
+    def select(self, state, jsonobj):
+        """
+        Provide a selection of options for choice
+        """
         choices = self.get_choices(
-            context, repodirpath, target, nonword_delegate, jsonobj
+            state, jsonobj
         )
         print(f"make choice {len(choices)}")
-        handler = context.interaction.make_choice(choices)
+        handler = state.context.interaction.make_choice(choices)
         return handler()
 
-    def get_choices(self, context, repodirpath, target, nonword_delegate, jsonobj):
+    def get_choices(self, state, jsonobj):
+        """
+        Prepare the list of options
+        """
         def skip_handler():
             """
             Finish processing early
@@ -210,66 +213,64 @@ class WordChoiceHandler:
         choices = {txt: skip_handler}
         for txt, word in self.wordchoice:
             choices[txt] = WordHandler(
-                self, word, context, repodirpath, target, nonword_delegate, jsonobj
+                self, word, state, jsonobj
             )
         return choices
 
-    def remove(self, handler):
-        for txt, check in self.wordchoice:
-            if check is handler:
-                del self.wordchoice[txt]
+    def remove(self, word):
+        """
+        Given a word to drop from the selection locate it and remove it
+        """
+        for index, txtword in enumerate(self.wordchoice):
+            if txtword[0] == word:
+                del self.wordchoice[index]
                 return
 
 
-class WordHandler:
+class WordHandler:  # pylint: disable=too-few-public-methods
+    """
+    Action to take if a word is selected
+    """
+
     def __init__(
         self,
         choicehandler,
         word,
-        context,
-        repodirpath,
-        target,
-        nonword_delegate,
+        state,
         jsonobj,
     ):
         self.choicehandler = choicehandler
         self.word = word
-        self.context = context
-        self.repodirpath = repodirpath
-        self.target = target
-        self.nonword_delegate = nonword_delegate
+        self.state = state
         self.jsonobj = jsonobj
 
     def __call__(self):
         completed = interactive_new_word(
-            self.context,
-            self.repodirpath,
-            self.target,
-            self.nonword_delegate,
+            self.state,
             self.jsonobj,
             self.word,
         )
-        self.choicehandler.remove(self)
+        self.choicehandler.remove(self.word)
         return WordChoiceResult(skip=False, completed=completed)
 
 
-def interactive_new_word(context, repodirpath, target, nonword_delegate, jsonobj, word):
+def interactive_new_word(state, jsonobj, word):
     """
     Single word processing
     """
     details = jsonobj[word]
     suggestion = details.get("suggestion_obj")
-    show_word(context.interaction, word, details)
+    show_word(state.context.interaction, word, details)
 
     def nonword_call():
         """
         Selected nonword option
         """
-        return handle_nonword(word, target, nonword_delegate)
+        return handle_nonword(word, state.target, state.nonword_delegate)
 
     choices = {
         "1) Typo": lambda: (
-            handle_typo(context.interaction, word, details, repodirpath)
+            handle_typo(state.context.interaction, word, details, state.repopath)
         ),
         "2) Non-word": nonword_call,
         "3) Skip": lambda: False,
@@ -282,34 +283,34 @@ def interactive_new_word(context, repodirpath, target, nonword_delegate, jsonobj
             if suggestion.replacement:
                 text = f"0) Suggest using {suggestion.replacement}, agree?"
                 choices[text] = lambda: fix_word(
-                    context.interaction,
+                    state.context.interaction,
                     word,
                     details,
                     suggestion.replacement,
-                    repodirpath,
+                    state.repopath,
                 )
-    result = context.interaction.make_choice(choices)
+    result = state.context.interaction.make_choice(choices)
     return result()
 
 
-def interactive_old_word(context, repodirpath, target, nonword_delegate, jsonobj, word):
+def interactive_old_word(state, jsonobj, word):
     """
     Single word processing
     """
     my_engine = GenericWorkflowEngine()
     my_engine.callbacks.replace([check_websearch, is_nonword, is_typo, what_now])
-    state = NonwordState(
-        context=context,
-        target=target,
+    newstate = NonwordState(
+        context=state.context,
+        target=state.target,
         word=word,
         details=jsonobj[word],
-        repopath=repodirpath,
-        nonword_delegate=nonword_delegate,
+        repopath=state.repopath,
+        nonword_delegate=state.nonword_delegate,
     )
     try:
-        my_engine.process([state])
+        my_engine.process([newstate])
     except HaltProcessing:
-        if state.done:
+        if newstate.done:
             return True
     return False
 
