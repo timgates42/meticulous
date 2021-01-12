@@ -134,34 +134,51 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
         return
     with io.open(jsonpath, "r", encoding="utf-8") as fobj:
         jsonobj = json.load(fobj)
-    completed = interactive_task_collect_nonwords_run(
-        context, repodirpath, target, nonstop, nonword_delegate, jsonobj
+    state = NonwordState(
+        context=context,
+        target=target,
+        word=None,
+        details=None,
+        repopath=repodirpath,
+        nonword_delegate=nonword_delegate,
     )
+    completed = interactive_task_collect_nonwords_run(state, nonstop, jsonobj)
     if completed:
         context.interaction.send(
             f"{Fore.YELLOW}Found all words" f" for {reponame}!{Style.RESET_ALL}"
         )
 
 
-def interactive_task_collect_nonwords_run(
-    context, repodirpath, target, nonstop, nonword_delegate, jsonobj
-):
+def interactive_task_collect_nonwords_run(state, nonstop, jsonobj):
     """
     Given the json state - saves nonwords until a typo is found
     """
-    wordchoice = get_sorted_words(context.interaction, jsonobj)
+    wordchoice = get_sorted_words(state.context.interaction, jsonobj)
     handler = WordChoiceHandler(wordchoice)
-    return handler.run(context, repodirpath, target, nonstop, nonword_delegate, jsonobj)
+    return handler.run(
+        state.context,
+        state.repopath,
+        state.target,
+        nonstop,
+        state.nonword_delegate,
+        jsonobj,
+    )
 
 
 WordChoiceResult = collections.namedtuple("WordChoiceResult", ["skip", "completed"])
 
 
 class WordChoiceHandler:
+    """
+    State for picking a word from a selection
+    """
     def __init__(self, wordchoice):
         self.wordchoice = wordchoice
 
     def run(self, context, repodirpath, target, nonstop, nonword_delegate, jsonobj):
+        """
+        Main word selection handler.
+        """
         print("selecting words")
         while self.wordchoice:
             result = self.select(
