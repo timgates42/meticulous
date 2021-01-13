@@ -448,10 +448,11 @@ def push_commit(repodir, add_word):
     return from_branch, to_branch
 
 
-def amend_commit(repodir, from_branch, to_branch):
+def amend_commit(reposave, from_branch, to_branch):
     """
     Update commit message to include issue number
     """
+    repodir = reposave["repodir"]
     git = local["git"]
     # plumbum bug workaround
     os.chdir(pathlib.Path.home())
