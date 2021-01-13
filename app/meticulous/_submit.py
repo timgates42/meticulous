@@ -220,12 +220,13 @@ def issue_and_branch_for(reponame, reposave):
         plain_pr_for(reponame, reposave)
         return
     make_a_commit(reponame, reposave, False)
-    _, _, from_branch, _ = non_interactive_prepare_commit(reposave)
+    _, _, from_branch, to_branch = non_interactive_prepare_commit(reposave)
     api = get_api()
     user_org = api.get_user().login
     pr_url = f"https://github.com/{user_org}/{reponame}/pull/new/{from_branch}"
     make_issue(reponame, reposave, True, pr_url=pr_url)
     submit_issue(reponame, reposave, None)
+    amend_commit(reposave, from_branch, to_branch)
 
 
 def prepare_a_pr_or_issue_for(reponame, reposave):
@@ -445,6 +446,18 @@ def push_commit(repodir, add_word):
         git("commit", "-F", "__commit__.txt")
         git("push", "origin", f"{to_branch}:{from_branch}")
     return from_branch, to_branch
+
+
+def amend_commit(repodir, from_branch, to_branch):
+    """
+    Update commit message to include issue number
+    """
+    git = local["git"]
+    # plumbum bug workaround
+    os.chdir(pathlib.Path.home())
+    with local.cwd(repodir):
+        git("commit", "-F", "__commit__.txt", "--amend")
+        git("push", "origin", "-f", f"{to_branch}:{from_branch}")
 
 
 def show_path(reponame, reposave, path):  # pylint: disable=unused-argument
