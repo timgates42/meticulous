@@ -183,6 +183,7 @@ class WordChoiceHandler:
             if result.skip:
                 return False
         print("selecting words completed")
+        state.interaction.complete_repo()
         return True
 
     def select(self, state, jsonobj):
@@ -551,7 +552,7 @@ def fix_word(interaction, word, details, newspell, repopath):
         else:
             file_paths.append(relpath)
     if file_paths:
-        add_repo_save(str(repopath), newspell, word, file_paths)
+        interaction.add_repo_save(str(repopath), newspell, word, file_paths)
     return True
 
 

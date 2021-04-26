@@ -163,6 +163,7 @@ class Interaction:
     Base kinds of interaction
     """
 
+    def add_repo_save(str(repopath), newspell, word, file_paths)
     def get_confirmation(self, message="Do you want to continue", defaultval=True):
         """
         Simple confirmation
