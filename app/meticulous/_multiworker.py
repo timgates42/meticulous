@@ -209,6 +209,63 @@ class Interaction:
         raise NotImplementedError()
 
 
+class MultiSubmitInteraction(Interaction):
+    """
+    Extends interaction to add storage of items until the repository is complete
+    and submits the items together
+    """
+
+    # pylint: disable=no-self-use
+    def add_repo_save(self, repopath, newspell, word, file_paths):
+        """
+        Default Implementation saves immediately rather than storing and
+        completing later
+        """
+        key = "multiitem_submit"
+        saved_items = get_json_value(key, deflt=[])
+        saved_items.append({
+            "repopath": str(repopath),
+        })
+        #add_repo_save(str(repopath), newspell, word, file_paths)
+
+    def complete_repo(self):
+        """
+        Default implementation does not use as each update is saved immediately
+        but multi-commit interaction will store up all updates until this point
+        when repository is complete.
+        """
+
+    def get_confirmation(self, message="Do you want to continue", defaultval=True):
+        """
+        Simple confirmation
+        """
+        raise NotImplementedError()
+
+    def get_input(self, message):
+        """
+        Get arbitrary text input
+        """
+        raise NotImplementedError()
+
+    def make_choice(self, choices, message="Please make a selection."):
+        """
+        Get arbitrary choice input
+        """
+        raise NotImplementedError()
+
+    def check_quit(self, controller):
+        """
+        Check if time to quit
+        """
+        raise NotImplementedError()
+
+    def send(self, message):
+        """
+        Display a message to the user
+        """
+        raise NotImplementedError()
+
+
 class KeyboardInteraction(Interaction):
     """
     Terminal keyboard interaction
