@@ -20,8 +20,15 @@ PyInquirer = "*"
 Flask = "*"
 sphinx-rtd-theme = "*"
 Sphinx = "*"
+towncrier = "*"
+#bandit = "*"
+#dlint = "*"
+#flake8 = "*"
+#isort = "*"
+#mock = "*"
 
 [dev-packages]
 
 [requires]
 python_version = "3.9"
+
