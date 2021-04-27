@@ -9,7 +9,7 @@ from meticulous._addrepo import addrepo_handlers
 from meticulous._cleanup import remove_repo_for
 from meticulous._controller import Controller
 from meticulous._input_queue import get_input_queue
-from meticulous._processrepo import processrepo_handlers
+from meticulous._processrepo import add_repo_save, processrepo_handlers
 from meticulous._storage import get_json_value, set_json_value
 from meticulous._submit import submit_handlers
 from meticulous._threadpool import get_pool
@@ -163,7 +163,21 @@ class Interaction:
     Base kinds of interaction
     """
 
-    def add_repo_save(str(repopath), newspell, word, file_paths)
+    # pylint: disable=no-self-use
+    def add_repo_save(self, repopath, newspell, word, file_paths):
+        """
+        Default Implementation saves immediately rather than storing and
+        completing later
+        """
+        add_repo_save(str(repopath), newspell, word, file_paths)
+
+    def complete_repo(self):
+        """
+        Default implementation does not use as each update is saved immediately
+        but multi-commit interaction will store up all updates until this point
+        when repository is complete.
+        """
+
     def get_confirmation(self, message="Do you want to continue", defaultval=True):
         """
         Simple confirmation

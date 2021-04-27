@@ -552,7 +552,7 @@ def fix_word(interaction, word, details, newspell, repopath):
         else:
             file_paths.append(relpath)
     if file_paths:
-        interaction.add_repo_save(str(repopath), newspell, word, file_paths)
+        interaction.add_repo_save(repopath, newspell, word, file_paths)
     return True
 
 
