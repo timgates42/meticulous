@@ -24,6 +24,7 @@ from meticulous._nonword import (
     update_nonwords,
 )
 from meticulous._storage import get_json_value, set_json_value
+from meticulous._submit import MULTI_SAVE_KEY
 from meticulous._websearch import Suggestion
 
 
@@ -582,12 +583,13 @@ def add_repo_save(repodir, add_word, del_word, file_paths):
     """
     Record a typo correction
     """
-    saves = get_json_value("repository_saves", {})
+    saves = get_json_value(MULTI_SAVE_KEY, [])
     reponame = Path(repodir).name
-    saves[reponame] = {
+    saves.append({
+        "reponame": reponame,
         "add_word": add_word,
         "del_word": del_word,
         "file_paths": file_paths,
         "repodir": repodir,
-    }
+    })
     set_json_value("repository_saves", saves)

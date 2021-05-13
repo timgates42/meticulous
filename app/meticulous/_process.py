@@ -31,6 +31,7 @@ from meticulous._nonword import load_recent_non_words
 from meticulous._processrepo import interactive_task_collect_nonwords
 from meticulous._storage import get_json_value, prepare, set_json_value
 from meticulous._submit import (
+    ALWAYS_BATCH_MODE,
     add_change_for_repo,
     fast_prepare_a_pr_or_issue_for,
     prepare_a_pr_or_issue_for,
@@ -277,7 +278,9 @@ def task_collect_nonwords(obj, eng):  # pylint: disable=unused-argument
         print(f"Unexpected number of repostories - {count}")
         return
     reponame = next(iter(repository_list.keys()))
-    interactive_task_collect_nonwords(KeyboardInteraction(), reponame, obj.target)
+    interactive_task_collect_nonwords(
+        KeyboardInteraction(), reponame, obj.target, nonstop=ALWAYS_BATCH_MODE
+    )
 
 
 def task_submit(obj, eng):  # pylint: disable=unused-argument

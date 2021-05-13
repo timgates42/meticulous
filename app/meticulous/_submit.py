@@ -17,10 +17,12 @@ from meticulous._exceptions import ProcessingFailed
 from meticulous._github import create_pr, get_api, get_parent_repo
 from meticulous._input import UserCancel, make_choice, make_simple_choice
 from meticulous._processrepo import add_repo_save
-from meticulous._storage import get_json_value
+from meticulous._storage import get_json_value, set_json_value
 from meticulous._summary import display_and_check_files
 from meticulous._util import get_editor
 
+MULTI_SAVE_KEY = "repository_saves_multi"
+ALWAYS_BATCH_MODE = True
 ALWAYS_ISSUE_AND_BRANCH = True
 ALWAYS_PLAIN_PR = True
 
@@ -72,9 +74,15 @@ def submit(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        repository_saves = get_json_value("repository_saves", {})
-        if reponame in repository_saves:
-            reposave = repository_saves[reponame]
+        orig_repository_saves_multi = get_json_value(MULTI_SAVE_KEY, [])
+        repository_saves_multi = [
+            reposave
+            for reposave in orig_repository_saves_multi
+            if reposave["reponame"] == reponame
+        ]
+        if len(repository_saves_multi) > 1:
+            raise Exception("Need to add multi support here")
+        for reposave in repository_saves_multi:
             if not ALWAYS_PLAIN_PR:
                 suggest_plain = check_if_plain_pr(reposave)
                 add_word = reposave["add_word"]
@@ -104,6 +112,7 @@ def submit(context):
                     "reposave": reposave,
                 }
             )
+        set_json_value(MULTI_SAVE_KEY, [])
 
     return handler
 
