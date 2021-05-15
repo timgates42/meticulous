@@ -80,9 +80,8 @@ def submit(context):
             for reposave in orig_repository_saves_multi
             if reposave["reponame"] == reponame
         ]
-        if len(repository_saves_multi) > 1:
-            raise Exception("Need to add multi support here")
-        for reposave in repository_saves_multi:
+        if len(repository_saves_multi) == 1:
+            reposave = repository_saves_multi[0]
             if not ALWAYS_PLAIN_PR:
                 suggest_plain = check_if_plain_pr(reposave)
                 add_word = reposave["add_word"]
@@ -102,16 +101,18 @@ def submit(context):
                     )
             else:
                 submit_plain = True
-            context.controller.add(
-                {
-                    "name": "issue_and_branch"
-                    if ALWAYS_ISSUE_AND_BRANCH
-                    else ("plain_pr" if submit_plain else "full_pr"),
-                    "interactive": False,
-                    "reponame": reponame,
-                    "reposave": reposave,
-                }
-            )
+        else:
+            submit_plain = False
+        context.controller.add(
+            {
+                "name": "issue_and_branch"
+                if ALWAYS_ISSUE_AND_BRANCH
+                else ("plain_pr" if submit_plain else "full_pr"),
+                "interactive": False,
+                "reponame": reponame,
+                "repository_saves_multi": repository_saves_multi,
+            }
+        )
         set_json_value(MULTI_SAVE_KEY, [])
 
     return handler
@@ -124,8 +125,8 @@ def plain_pr(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        reposave = context.taskjson["reposave"]
-        plain_pr_for(reponame, reposave)
+        repository_saves_multi = context.taskjson["repository_saves_multi"]
+        plain_pr_for(reponame, repository_saves_multi)
         add_cleanup(context, reponame)
 
     return handler
@@ -138,8 +139,8 @@ def full_pr(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        reposave = context.taskjson["reposave"]
-        full_pr_for(reponame, reposave)
+        repository_saves_multi = context.taskjson["repository_saves_multi"]
+        full_pr_for(reponame, repository_saves_multi)
         add_cleanup(context, reponame)
 
     return handler
@@ -152,8 +153,8 @@ def issue_and_branch(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        reposave = context.taskjson["reposave"]
-        issue_and_branch_for(reponame, reposave)
+        repository_saves_multi = context.taskjson["repository_saves_multi"]
+        issue_and_branch_for(reponame, repository_saves_multi)
         add_cleanup(context, reponame)
 
     return handler
@@ -174,7 +175,7 @@ def fast_prepare_a_pr_or_issue_for(reponame, reposave):
     pull request or is happy with just a pull request.
     """
     if check_if_plain_pr(reposave):
-        plain_pr_for(reponame, reposave)
+        plain_pr_for(reponame, [reposave])
     else:
         prepare_a_pr_or_issue_for(reponame, reposave)
 
@@ -198,24 +199,24 @@ def check_if_plain_pr(reposave):
     return False
 
 
-def plain_pr_for(reponame, reposave):
+def plain_pr_for(reponame, repository_saves_multi):
     """
     Create and submit the standard PR.
     """
-    make_a_commit(reponame, reposave, False)
-    non_interactive_submit_commit(reponame, reposave)
+    make_a_commit_multi(reponame, repository_saves_multi, False)
+    non_interactive_submit_commit_multi(reponame, repository_saves_multi)
 
 
-def full_pr_for(reponame, reposave):
+def full_pr_for(reponame, repository_saves_multi):
     """
     Create and submit the standard PR.
     """
-    make_issue(reponame, reposave, True)
-    submit_issue(reponame, reposave, None)
-    non_interactive_submit_commit(reponame, reposave)
+    make_issue_multi(reponame, repository_saves_multi, True)
+    submit_issue_multi(reponame, repository_saves_multi, None)
+    non_interactive_submit_commit_multi(reponame, repository_saves_multi)
 
 
-def issue_and_branch_for(reponame, reposave):
+def issue_and_branch_for(reponame, repository_saves_multi):
     """
     Create an issue and a branch that is ready to create a PR but has not yet
     created the PR this can avoid wasting CI processing if the issue will never
@@ -226,15 +227,17 @@ def issue_and_branch_for(reponame, reposave):
     repodirpath = Path(repodir)
     no_issues_path = repodirpath / no_issues
     if no_issues_path.is_file():
-        plain_pr_for(reponame, reposave)
+        plain_pr_for(reponame, repository_saves_multi)
         return
-    make_a_commit(reponame, reposave, False)
-    _, _, from_branch, to_branch = non_interactive_prepare_commit(reposave)
+    make_a_commit_multi(reponame, repository_saves_multi, False)
+    _, _, from_branch, to_branch = non_interactive_prepare_commit_multi(
+        repository_saves_multi
+    )
     api = get_api()
     user_org = api.get_user().login
     pr_url = f"https://github.com/{user_org}/{reponame}/pull/new/{from_branch}"
-    make_issue(reponame, reposave, True, pr_url=pr_url)
-    submit_issue(reponame, reposave, None)
+    make_issue_multi(reponame, repository_saves_multi, True, pr_url=pr_url)
+    submit_issue_multi(reponame, reposave, None)
     amend_commit(reposave, from_branch, to_branch)
 
 
@@ -360,6 +363,47 @@ Should read `{add_word}` rather than `{del_word}`.
         )
 
 
+def make_a_commit_multi(
+    reponame, reposaves, is_full
+):  # pylint: disable=unused-argument
+    """
+    Prepare a commit template file
+    """
+    if not reposaves:
+        return
+    if len(reposaves) == 1:
+        make_a_commit(reponame, reposaves[0], is_full)
+        return
+    file_paths = list(set(sum((reposave["file_paths"] for reposave in reposaves), [])))
+    file_paths.sorted()
+    add_word = reposave["add_word"]
+    del_word = reposave["del_word"]
+    file_paths = reposave["file_paths"]
+    repodir = Path(reposave["repodir"])
+    files = "\n".join([f"- {file_path}" for file_path in file_paths])
+    lines = "\n".join(
+        [
+            f"- Should read `{repo_save['add_word']}`"
+            f" rather than `{repo_save['del_word']}`."
+            for reposave in reposaves
+        ]
+    )
+    commit_path = str(repodir / "__commit__.txt")
+    with io.open(commit_path, "w", encoding="utf-8") as fobj:
+        print(
+            f"""\
+docs: Fix a few typos
+
+There are small typos in:
+{files}
+
+Fixes:
+{lines}
+""",
+            file=fobj,
+        )
+
+
 def submit_issue(reponame, reposave, ctxt):  # pylint: disable=unused-argument
     """
     Push up an issue
@@ -412,37 +456,50 @@ def submit_commit(reponame, reposave, ctxt):  # pylint: disable=unused-argument
     """
     Push up a commit and show message
     """
-    print(non_interactive_submit_commit(reponame, reposave))
+    print(non_interactive_submit_commit_multi(reponame, [reposave]))
 
 
-def non_interactive_submit_commit(reponame, reposave):
+def non_interactive_submit_commit_multi(reponame, reposaves):
     """
     Push up a PR from a commit
     """
     try:
-        title, body, from_branch, to_branch = non_interactive_prepare_commit(reposave)
+        title, body, from_branch, to_branch = (
+            non_interactive_prepare_commit_multi(reposaves)
+        )
         body += f"\n{get_note('pull request')}"
         pullreq = create_pr(reponame, title, body, from_branch, to_branch)
         return f"Created PR #{pullreq.number} view at {pullreq.html_url}"
+    except ValueError:
+        return f"Failed to process {reponame}."
     except ProcessExecutionError:
         return f"Failed to commit for {reponame}."
     except GithubException:
         return f"Failed to create pr for {reponame}."
 
 
-def non_interactive_prepare_commit(reposave):
+def non_interactive_prepare_commit_multi(reposaves):
     """
     Push up a commit
     """
+    if not reposaves:
+        raise ValueError("No fixes to prepare")
+    reposave = reposaves[0]
+    if any(reposave["repodir"] != check["repodir"] for check in reposaves):
+        raise ValueError("Mismatch in repositories preparing commit")
     repodir = Path(reposave["repodir"])
-    add_word = reposave["add_word"]
     commit_path = str(repodir / "__commit__.txt")
     title, body = load_commit_like_file(commit_path)
-    from_branch, to_branch = push_commit(repodir, add_word)
-    return title, body, from_branch, to_branch
+    if len(reposaves) == 1:
+        add_word = reposave["add_word"]
+        branch_name = f"bugfix_typo_{add_word.replace(' ', '_')}"
+    else:
+        branch_name = "bugfix_typos"
+    to_branch = push_commit_multi(repodir, branch_name)
+    return title, body, branch_name, to_branch
 
 
-def push_commit(repodir, add_word):
+def push_commit_multi(repodir, branch_name):
     """
     Create commit and push
     """
@@ -451,10 +508,9 @@ def push_commit(repodir, add_word):
     os.chdir(pathlib.Path.home())
     with local.cwd(repodir):
         to_branch = git("symbolic-ref", "--short", "HEAD").strip()
-        from_branch = f"bugfix_typo_{add_word.replace(' ', '_')}"
         git("commit", "-F", "__commit__.txt")
-        git("push", "origin", f"{to_branch}:{from_branch}")
-    return from_branch, to_branch
+        git("push", "origin", f"{to_branch}:{branch_name}")
+    return to_branch
 
 
 def amend_commit(reposave, from_branch, to_branch):
