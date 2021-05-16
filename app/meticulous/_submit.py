@@ -13,6 +13,11 @@ from pathlib import Path
 from github import GithubException
 from plumbum import FG, ProcessExecutionError, local
 
+from meticulous._constants import (
+    ALWAYS_ISSUE_AND_BRANCH,
+    ALWAYS_PLAIN_PR,
+    MULTI_SAVE_KEY,
+)
 from meticulous._exceptions import ProcessingFailed
 from meticulous._github import create_pr, get_api, get_parent_repo
 from meticulous._input import UserCancel, make_choice, make_simple_choice
@@ -20,11 +25,6 @@ from meticulous._processrepo import add_repo_save
 from meticulous._storage import get_json_value, set_json_value
 from meticulous._summary import display_and_check_files
 from meticulous._util import get_editor
-
-MULTI_SAVE_KEY = "repository_saves_multi"
-ALWAYS_BATCH_MODE = True
-ALWAYS_ISSUE_AND_BRANCH = True
-ALWAYS_PLAIN_PR = True
 
 
 def get_note(kind, pr_url=None):

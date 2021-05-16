@@ -17,6 +17,7 @@ from spelling.check import context_to_filename
 from workflow.engine import GenericWorkflowEngine
 from workflow.errors import HaltProcessing
 
+from meticulous._constants import MULTI_SAVE_KEY
 from meticulous._nonword import (
     add_non_word,
     check_nonwords,
@@ -24,7 +25,6 @@ from meticulous._nonword import (
     update_nonwords,
 )
 from meticulous._storage import get_json_value, set_json_value
-from meticulous._submit import MULTI_SAVE_KEY
 from meticulous._websearch import Suggestion
 
 

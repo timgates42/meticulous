@@ -17,6 +17,7 @@ from workflow.engine import GenericWorkflowEngine
 
 from meticulous._addrepo import interactive_add_one_new_repo, spelling_check
 from meticulous._cleanup import remove_repo_for
+from meticulous._constants import ALWAYS_BATCH_MODE
 from meticulous._exceptions import NoRepoException, ProcessingFailed
 from meticulous._input import (
     UserCancel,
@@ -31,7 +32,6 @@ from meticulous._nonword import load_recent_non_words
 from meticulous._processrepo import interactive_task_collect_nonwords
 from meticulous._storage import get_json_value, prepare, set_json_value
 from meticulous._submit import (
-    ALWAYS_BATCH_MODE,
     add_change_for_repo,
     fast_prepare_a_pr_or_issue_for,
     prepare_a_pr_or_issue_for,
