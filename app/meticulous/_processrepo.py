@@ -162,7 +162,9 @@ def interactive_task_collect_nonwords_run(state, nonstop, jsonobj):
     )
 
 
-WordChoiceResult = collections.namedtuple("WordChoiceResult", ["skip", "completed"])
+WordChoiceResult = collections.namedtuple(
+    "WordChoiceResult", ["skip", "completed", "force_completed"]
+)
 
 
 class WordChoiceHandler:
@@ -180,6 +182,8 @@ class WordChoiceHandler:
         print("selecting words")
         while self.wordchoice:
             result = self.select(state, jsonobj)
+            if result.force_completed:
+                break
             if result.completed and not nonstop:
                 return False
             if result.skip:
@@ -202,14 +206,21 @@ class WordChoiceHandler:
         Prepare the list of options
         """
 
+        def complete_handler():
+            """
+            Finish processing
+            """
+            return WordChoiceResult(skip=False, completed=True, force_completed=True)
+
         def skip_handler():
             """
             Finish processing early
             """
-            return WordChoiceResult(skip=True, completed=False)
+            return WordChoiceResult(skip=True, completed=False, force_completed=False)
 
-        txt = "99) Skip repository."
-        choices = {txt: skip_handler}
+        ctxt = "98) Complete repository."
+        stxt = "99) Skip repository."
+        choices = {ctxt: complete_handler, stxt: skip_handler}
         for txt, word in self.wordchoice:
             choices[txt] = WordHandler(self, word, state, jsonobj)
         return choices
@@ -248,7 +259,7 @@ class WordHandler:  # pylint: disable=too-few-public-methods
             self.word,
         )
         self.choicehandler.remove(self.word)
-        return WordChoiceResult(skip=False, completed=completed)
+        return WordChoiceResult(skip=False, completed=completed, force_completed=False)
 
 
 def interactive_new_word(state, jsonobj, word):
@@ -586,11 +597,13 @@ def add_repo_save(repodir, add_word, del_word, file_paths):
     """
     saves = get_json_value(MULTI_SAVE_KEY, [])
     reponame = Path(repodir).name
-    saves.append({
-        "reponame": reponame,
-        "add_word": add_word,
-        "del_word": del_word,
-        "file_paths": file_paths,
-        "repodir": repodir,
-    })
+    saves.append(
+        {
+            "reponame": reponame,
+            "add_word": add_word,
+            "del_word": del_word,
+            "file_paths": file_paths,
+            "repodir": repodir,
+        }
+    )
     set_json_value(MULTI_SAVE_KEY, saves)

@@ -242,8 +242,8 @@ def issue_and_branch_for(reponame, repository_saves_multi):
     user_org = api.get_user().login
     pr_url = f"https://github.com/{user_org}/{reponame}/pull/new/{from_branch}"
     make_issue_multi(reponame, repository_saves_multi, True, pr_url=pr_url)
-    submit_issue_multi(reponame, reposave, None)
-    amend_commit(reposave, from_branch, to_branch)
+    submit_issue_multi(reponame, repository_saves_multi, None)
+    amend_commit(repository_saves_multi, from_branch, to_branch)
 
 
 def prepare_a_pr_or_issue_for(reponame, reposave):
@@ -600,10 +600,15 @@ def push_commit_multi(repodir, branch_name):
     return to_branch
 
 
-def amend_commit(reposave, from_branch, to_branch):
+def amend_commit(repository_saves_multi, from_branch, to_branch):
     """
     Update commit message to include issue number
     """
+    if not repository_saves_multi:
+        raise ValueError("No fixes for amend commit")
+    reposave = repository_saves_multi[0]
+    if any(reposave["repodir"] != check["repodir"] for check in repository_saves_multi):
+        raise ValueError("Mismatch in repositories amending commit")
     repodir = reposave["repodir"]
     git = local["git"]
     # plumbum bug workaround
