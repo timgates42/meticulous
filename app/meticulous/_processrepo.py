@@ -17,7 +17,7 @@ from spelling.check import context_to_filename
 from workflow.engine import GenericWorkflowEngine
 from workflow.errors import HaltProcessing
 
-from meticulous._constants import MULTI_SAVE_KEY
+from meticulous._constants import ALWAYS_BATCH_MODE, MULTI_SAVE_KEY
 from meticulous._nonword import (
     add_non_word,
     check_nonwords,
@@ -67,6 +67,7 @@ def collect_nonwords(context):
                 reponame,
                 target,
                 nonword_delegate=noninteractive_nonword_delegate(context),
+                nonstop=ALWAYS_BATCH_MODE,
             )
             context.controller.add(
                 {
@@ -592,4 +593,4 @@ def add_repo_save(repodir, add_word, del_word, file_paths):
         "file_paths": file_paths,
         "repodir": repodir,
     })
-    set_json_value("repository_saves", saves)
+    set_json_value(MULTI_SAVE_KEY, saves)
