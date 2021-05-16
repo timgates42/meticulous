@@ -125,7 +125,7 @@ def plain_pr(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        repository_saves_multi = context.taskjson["repository_saves_multi"]
+        repository_saves_multi = get_json_value(MULTI_SAVE_KEY, [])
         plain_pr_for(reponame, repository_saves_multi)
         add_cleanup(context, reponame)
 
@@ -139,7 +139,7 @@ def full_pr(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        repository_saves_multi = context.taskjson["repository_saves_multi"]
+        repository_saves_multi = get_json_value(MULTI_SAVE_KEY, [])
         full_pr_for(reponame, repository_saves_multi)
         add_cleanup(context, reponame)
 
@@ -153,7 +153,7 @@ def issue_and_branch(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        repository_saves_multi = context.taskjson["repository_saves_multi"]
+        repository_saves_multi = get_json_value(MULTI_SAVE_KEY, [])
         issue_and_branch_for(reponame, repository_saves_multi)
         add_cleanup(context, reponame)
 

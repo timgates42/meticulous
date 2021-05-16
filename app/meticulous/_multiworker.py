@@ -7,6 +7,7 @@ import pprint
 from meticulous import _input
 from meticulous._addrepo import addrepo_handlers
 from meticulous._cleanup import remove_repo_for
+from meticulous._constants import MULTI_SAVE_KEY
 from meticulous._controller import Controller
 from meticulous._input_queue import get_input_queue
 from meticulous._processrepo import add_repo_save, processrepo_handlers
@@ -75,6 +76,7 @@ def cleanup(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
+        set_json_value(MULTI_SAVE_KEY, [])
         repository_map = get_json_value("repository_map", {})
         if reponame in repository_map:
             reposave = repository_map[reponame]
@@ -226,7 +228,6 @@ class MultiSubmitInteraction(Interaction):
         saved_items.append({
             "repopath": str(repopath),
         })
-        #add_repo_save(str(repopath), newspell, word, file_paths)
 
     def complete_repo(self):
         """
