@@ -340,6 +340,48 @@ Should read `{add_word}` rather than `{del_word}`.
         print(body, file=fobj)
 
 
+def make_issue_multi(
+    reponame, reposaves, is_full, pr_url=None
+):  # pylint: disable=unused-argument
+    """
+    Prepare an issue template file
+    """
+    if not reposaves:
+        raise ValueError("No fixes to make issue")
+    if len(reposaves) == 1:
+        return make_issue(reponame, reposaves[0], is_full, pr_url=pr_url)
+    reposave = reposaves[0]
+    if any(reposave["repodir"] != check["repodir"] for check in reposaves):
+        raise ValueError("Mismatch in repositories making issue")
+    repodir = Path(reposave["repodir"])
+    steps = []
+    for item in reposaves:
+        files = ", ".join(item['file_paths'])
+        steps.append(
+            f"- Examine {files} search for {item['del_word']} however"
+            f" expect to see {item['add_word']}."
+        )
+    steptxt = "\n".join(steps)
+    title = "Proposing a PR to fix a few small typos"
+    body = f"""\
+# Issue Type
+
+[x] Bug (Typo)
+
+# Steps to Replicate and Expected Behaviour
+
+{steptxt}
+
+# Notes
+
+{get_note('issue', pr_url)}
+"""
+    with io.open(str(repodir / "__issue__.txt"), "w", encoding="utf-8") as fobj:
+        print(title, file=fobj)
+        print("", file=fobj)
+        print(body, file=fobj)
+
+
 def make_a_commit(reponame, reposave, is_full):  # pylint: disable=unused-argument
     """
     Prepare a commit template file
