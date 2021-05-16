@@ -222,6 +222,11 @@ def issue_and_branch_for(reponame, repository_saves_multi):
     created the PR this can avoid wasting CI processing if the issue will never
     be accepted and is still quite convenient.
     """
+    if not repository_saves_multi:
+        raise ValueError("No fixes for issue and branch")
+    reposave = repository_saves_multi[0]
+    if any(reposave["repodir"] != check["repodir"] for check in repository_saves_multi):
+        raise ValueError("Mismatch in repositories making issue and branch")
     no_issues = Path("__no_issues__.txt")
     repodir = reposave["repodir"]
     repodirpath = Path(repodir)
@@ -349,14 +354,15 @@ def make_issue_multi(
     if not reposaves:
         raise ValueError("No fixes to make issue")
     if len(reposaves) == 1:
-        return make_issue(reponame, reposaves[0], is_full, pr_url=pr_url)
+        make_issue(reponame, reposaves[0], is_full, pr_url=pr_url)
+        return
     reposave = reposaves[0]
     if any(reposave["repodir"] != check["repodir"] for check in reposaves):
         raise ValueError("Mismatch in repositories making issue")
     repodir = Path(reposave["repodir"])
     steps = []
     for item in reposaves:
-        files = ", ".join(item['file_paths'])
+        files = ", ".join(item["file_paths"])
         steps.append(
             f"- Examine {files} search for {item['del_word']} however"
             f" expect to see {item['add_word']}."
@@ -416,34 +422,43 @@ def make_a_commit_multi(
     if len(reposaves) == 1:
         make_a_commit(reponame, reposaves[0], is_full)
         return
-    file_paths = list(set(sum((reposave["file_paths"] for reposave in reposaves), [])))
-    file_paths.sorted()
-    add_word = reposave["add_word"]
-    del_word = reposave["del_word"]
-    file_paths = reposave["file_paths"]
+    reposave = reposaves[0]
+    if any(reposave["repodir"] != check["repodir"] for check in reposaves):
+        raise ValueError("Mismatch in makind a commit")
     repodir = Path(reposave["repodir"])
-    files = "\n".join([f"- {file_path}" for file_path in file_paths])
-    lines = "\n".join(
-        [
-            f"- Should read `{repo_save['add_word']}`"
-            f" rather than `{repo_save['del_word']}`."
-            for reposave in reposaves
-        ]
-    )
     commit_path = str(repodir / "__commit__.txt")
     with io.open(commit_path, "w", encoding="utf-8") as fobj:
         print(
             f"""\
 docs: Fix a few typos
 
+{summary_multi(reposaves)}
+""",
+            file=fobj,
+        )
+
+
+def summary_multi(reposaves):
+    """
+    Get a text summary of fixing several typos.
+    """
+    file_paths = list(set(sum((reposave["file_paths"] for reposave in reposaves), [])))
+    file_paths.sort()
+    files = "\n".join([f"- {file_path}" for file_path in file_paths])
+    lines = "\n".join(
+        [
+            f"- Should read `{reposave['add_word']}`"
+            f" rather than `{reposave['del_word']}`."
+            for reposave in reposaves
+        ]
+    )
+    return f"""\
 There are small typos in:
 {files}
 
 Fixes:
 {lines}
-""",
-            file=fobj,
-        )
+"""
 
 
 def submit_issue(reponame, reposave, ctxt):  # pylint: disable=unused-argument
@@ -465,6 +480,36 @@ def submit_issue(reponame, reposave, ctxt):  # pylint: disable=unused-argument
 docs: fix simple typo, {del_word} -> {add_word}
 
 There is a small typo in {files}.
+
+Closes #{issue_num}
+""",
+            file=fobj,
+        )
+
+
+def submit_issue_multi(reponame, reposaves, ctxt):  # pylint: disable=unused-argument
+    """
+    Push up an issue
+    """
+    if not reposaves:
+        raise ValueError("No fixes to submit")
+    reposave = reposaves[0]
+    if any(reposave["repodir"] != check["repodir"] for check in reposaves):
+        raise ValueError("Mismatch in submitting repositories")
+    if len(reposaves) == 1:
+        submit_issue(reponame, reposave, ctxt)
+        return
+    repodir = Path(reposave["repodir"])
+    issue_path = str(repodir / "__issue__.txt")
+    title, body = load_commit_like_file(issue_path)
+    issue_num = issue_via_api(reponame, title, body)
+    commit_path = str(repodir / "__commit__.txt")
+    with io.open(commit_path, "w", encoding="utf-8") as fobj:
+        print(
+            f"""\
+docs: fix a few simple typos
+
+{summary_multi(reposaves)}
 
 Closes #{issue_num}
 """,
@@ -506,8 +551,8 @@ def non_interactive_submit_commit_multi(reponame, reposaves):
     Push up a PR from a commit
     """
     try:
-        title, body, from_branch, to_branch = (
-            non_interactive_prepare_commit_multi(reposaves)
+        title, body, from_branch, to_branch = non_interactive_prepare_commit_multi(
+            reposaves
         )
         body += f"\n{get_note('pull request')}"
         pullreq = create_pr(reponame, title, body, from_branch, to_branch)
