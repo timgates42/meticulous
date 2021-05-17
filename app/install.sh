@@ -15,6 +15,7 @@ apk add --no-cache \
     libffi-dev \
     openssl-dev gcc musl-dev postgresql-dev
 
+"python${PYVER}" -m pip install -U pip setuptools wheel
 cd "${BASEDIR}/pip/${PYVER}"
 for reqfile in */requirements.txt ; do
 if [ "$(wc -l < "${reqfile}")" -gt 0 ] ; then

@@ -17,14 +17,14 @@ from spelling.check import context_to_filename
 from workflow.engine import GenericWorkflowEngine
 from workflow.errors import HaltProcessing
 
-from meticulous._constants import ALWAYS_BATCH_MODE, MULTI_SAVE_KEY
+from meticulous._constants import ALWAYS_BATCH_MODE
 from meticulous._nonword import (
     add_non_word,
     check_nonwords,
     is_local_non_word,
     update_nonwords,
 )
-from meticulous._storage import get_json_value, set_json_value
+from meticulous._storage import get_json_value, get_multi_repo, set_multi_repo
 from meticulous._websearch import Suggestion
 
 
@@ -595,8 +595,8 @@ def add_repo_save(repodir, add_word, del_word, file_paths):
     """
     Record a typo correction
     """
-    saves = get_json_value(MULTI_SAVE_KEY, [])
     reponame = Path(repodir).name
+    saves = get_multi_repo(reponame)
     saves.append(
         {
             "reponame": reponame,
@@ -606,4 +606,4 @@ def add_repo_save(repodir, add_word, del_word, file_paths):
             "repodir": repodir,
         }
     )
-    set_json_value(MULTI_SAVE_KEY, saves)
+    set_multi_repo(reponame, saves)

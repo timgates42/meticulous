@@ -7,11 +7,10 @@ import pprint
 from meticulous import _input
 from meticulous._addrepo import addrepo_handlers
 from meticulous._cleanup import remove_repo_for
-from meticulous._constants import MULTI_SAVE_KEY
 from meticulous._controller import Controller
 from meticulous._input_queue import get_input_queue
 from meticulous._processrepo import add_repo_save, processrepo_handlers
-from meticulous._storage import get_json_value, set_json_value
+from meticulous._storage import get_json_value, set_json_value, set_multi_repo
 from meticulous._submit import submit_handlers
 from meticulous._threadpool import get_pool
 
@@ -76,7 +75,7 @@ def cleanup(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        set_json_value(MULTI_SAVE_KEY, [])
+        set_multi_repo(reponame, [])
         repository_map = get_json_value("repository_map", {})
         if reponame in repository_map:
             reposave = repository_map[reponame]

@@ -13,16 +13,12 @@ from pathlib import Path
 from github import GithubException
 from plumbum import FG, ProcessExecutionError, local
 
-from meticulous._constants import (
-    ALWAYS_ISSUE_AND_BRANCH,
-    ALWAYS_PLAIN_PR,
-    MULTI_SAVE_KEY,
-)
+from meticulous._constants import ALWAYS_ISSUE_AND_BRANCH, ALWAYS_PLAIN_PR
 from meticulous._exceptions import ProcessingFailed
 from meticulous._github import create_pr, get_api, get_parent_repo
 from meticulous._input import UserCancel, make_choice, make_simple_choice
 from meticulous._processrepo import add_repo_save
-from meticulous._storage import get_json_value, set_json_value
+from meticulous._storage import get_multi_repo
 from meticulous._summary import display_and_check_files
 from meticulous._util import get_editor
 
@@ -74,7 +70,7 @@ def submit(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        orig_repository_saves_multi = get_json_value(MULTI_SAVE_KEY, [])
+        orig_repository_saves_multi = get_multi_repo(reponame)
         repository_saves_multi = [
             reposave
             for reposave in orig_repository_saves_multi
@@ -110,10 +106,8 @@ def submit(context):
                 else ("plain_pr" if submit_plain else "full_pr"),
                 "interactive": False,
                 "reponame": reponame,
-                "repository_saves_multi": repository_saves_multi,
             }
         )
-        set_json_value(MULTI_SAVE_KEY, [])
 
     return handler
 
@@ -125,7 +119,7 @@ def plain_pr(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        repository_saves_multi = get_json_value(MULTI_SAVE_KEY, [])
+        repository_saves_multi = get_multi_repo(reponame)
         plain_pr_for(reponame, repository_saves_multi)
         add_cleanup(context, reponame)
 
@@ -139,7 +133,7 @@ def full_pr(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        repository_saves_multi = get_json_value(MULTI_SAVE_KEY, [])
+        repository_saves_multi = get_multi_repo(reponame)
         full_pr_for(reponame, repository_saves_multi)
         add_cleanup(context, reponame)
 
@@ -153,7 +147,7 @@ def issue_and_branch(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
-        repository_saves_multi = get_json_value(MULTI_SAVE_KEY, [])
+        repository_saves_multi = get_multi_repo(reponame)
         issue_and_branch_for(reponame, repository_saves_multi)
         add_cleanup(context, reponame)
 
@@ -364,8 +358,8 @@ def make_issue_multi(
     for item in reposaves:
         files = ", ".join(item["file_paths"])
         steps.append(
-            f"- Examine {files} search for {item['del_word']} however"
-            f" expect to see {item['add_word']}."
+            f"- Examine {files} and observe `{item['del_word']}`, however"
+            f" expect to see `{item['add_word']}`."
         )
     steptxt = "\n".join(steps)
     title = "Proposing a PR to fix a few small typos"
