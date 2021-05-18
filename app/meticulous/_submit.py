@@ -32,7 +32,7 @@ def get_note(kind, pr_url=None):
         f"https://github.com/timgates42/meticulous"
         f"/blob/master/docs/NOTE.md"
     )
-    if pr_url is None:
+    if kind != 'issue' or pr_url is None:
         return header
     api = get_api()
     user_org = api.get_user().login
@@ -42,7 +42,8 @@ def get_note(kind, pr_url=None):
 To avoid wasting CI processing resources a branch with the fix has been
 prepared but a pull request has not yet been created. A pull request fixing
 the issue can be prepared from the link below, feel free to create it or
-request @{user_org} create the PR.
+request @{user_org} create the PR. Alternatively if the fix is undesired please
+close the issue with a small comment about the reasoning.
 
 {pr_url}
 
