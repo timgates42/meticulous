@@ -20,7 +20,8 @@ class PoolManager:
 
     def __init__(self, handlers, max_workers):
         self._handlers = handlers
-        self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
+        self._executor = None
+        self._max_workers = max_workers
         self._draining = False
         self._saved = []
         self._futures = []
@@ -29,7 +30,7 @@ class PoolManager:
         """
         add a task to the executor
         """
-        if self._draining:
+        if self._draining or self._executor is None:
             raise Exception("No new tasks when draining.")
         future = self._executor.submit(
             self.run_task, taskjson=taskjson, controller=controller
@@ -68,12 +69,18 @@ class PoolManager:
         """
         Wait for current tasks to complete
         """
-        self._executor.shutdown()
+        if self._executor is not None:
+            self._executor.shutdown()
+            self._executor = None
 
     def __enter__(self):
         """
         Implement python with interface
         """
+        # pylint: disable=consider-using-with
+        self._executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=self._max_workers
+        )
         return self
 
     def __exit__(self, type, value, traceback):  # pylint: disable=redefined-builtin
