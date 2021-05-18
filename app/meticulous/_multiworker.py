@@ -224,9 +224,11 @@ class MultiSubmitInteraction(Interaction):
         """
         key = "multiitem_submit"
         saved_items = get_json_value(key, deflt=[])
-        saved_items.append({
-            "repopath": str(repopath),
-        })
+        saved_items.append(
+            {
+                "repopath": str(repopath),
+            }
+        )
 
     def complete_repo(self):
         """
