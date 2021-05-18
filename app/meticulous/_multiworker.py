@@ -9,8 +9,8 @@ from meticulous._addrepo import addrepo_handlers
 from meticulous._cleanup import remove_repo_for
 from meticulous._controller import Controller
 from meticulous._input_queue import get_input_queue
-from meticulous._processrepo import processrepo_handlers
-from meticulous._storage import get_json_value, set_json_value
+from meticulous._processrepo import add_repo_save, processrepo_handlers
+from meticulous._storage import get_json_value, set_json_value, set_multi_repo
 from meticulous._submit import submit_handlers
 from meticulous._threadpool import get_pool
 
@@ -75,6 +75,7 @@ def cleanup(context):
 
     def handler():
         reponame = context.taskjson["reponame"]
+        set_multi_repo(reponame, [])
         repository_map = get_json_value("repository_map", {})
         if reponame in repository_map:
             reposave = repository_map[reponame]
@@ -162,6 +163,79 @@ class Interaction:
     """
     Base kinds of interaction
     """
+
+    # pylint: disable=no-self-use
+    def add_repo_save(self, repopath, newspell, word, file_paths):
+        """
+        Default Implementation saves immediately rather than storing and
+        completing later
+        """
+        add_repo_save(str(repopath), newspell, word, file_paths)
+
+    def complete_repo(self):
+        """
+        Default implementation does not use as each update is saved immediately
+        but multi-commit interaction will store up all updates until this point
+        when repository is complete.
+        """
+
+    def get_confirmation(self, message="Do you want to continue", defaultval=True):
+        """
+        Simple confirmation
+        """
+        raise NotImplementedError()
+
+    def get_input(self, message):
+        """
+        Get arbitrary text input
+        """
+        raise NotImplementedError()
+
+    def make_choice(self, choices, message="Please make a selection."):
+        """
+        Get arbitrary choice input
+        """
+        raise NotImplementedError()
+
+    def check_quit(self, controller):
+        """
+        Check if time to quit
+        """
+        raise NotImplementedError()
+
+    def send(self, message):
+        """
+        Display a message to the user
+        """
+        raise NotImplementedError()
+
+
+class MultiSubmitInteraction(Interaction):
+    """
+    Extends interaction to add storage of items until the repository is complete
+    and submits the items together
+    """
+
+    # pylint: disable=no-self-use
+    def add_repo_save(self, repopath, newspell, word, file_paths):
+        """
+        Default Implementation saves immediately rather than storing and
+        completing later
+        """
+        key = "multiitem_submit"
+        saved_items = get_json_value(key, deflt=[])
+        saved_items.append(
+            {
+                "repopath": str(repopath),
+            }
+        )
+
+    def complete_repo(self):
+        """
+        Default implementation does not use as each update is saved immediately
+        but multi-commit interaction will store up all updates until this point
+        when repository is complete.
+        """
 
     def get_confirmation(self, message="Do you want to continue", defaultval=True):
         """

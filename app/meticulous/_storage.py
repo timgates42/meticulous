@@ -9,6 +9,8 @@ import threading
 
 import psycopg2
 
+from meticulous._constants import MULTI_SAVE_KEY
+
 
 def prepare():
     """
@@ -93,6 +95,25 @@ def get_store_dir():
     if not apppath.is_dir():
         apppath.mkdir()
     return apppath
+
+
+def get_multi_repo(reponame):
+    """
+    Load multiple repository updates
+    """
+    return [
+        item for item in get_json_value(MULTI_SAVE_KEY) if item["reponame"] == reponame
+    ]
+
+
+def set_multi_repo(reponame, value):
+    """
+    Save multiple repository updates
+    """
+    save = value + [
+        item for item in get_json_value(MULTI_SAVE_KEY) if item["reponame"] != reponame
+    ]
+    set_json_value(MULTI_SAVE_KEY, save)
 
 
 if __name__ == "__main__":

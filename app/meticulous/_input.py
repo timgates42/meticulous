@@ -52,11 +52,13 @@ def check_cancel(result):
     return result
 
 
-def get_input(message):
+def get_input(message, defaultval=""):
     """
     Call PyInquirer/prompt-toolkit to make a simple input
     """
-    menu = [{"type": "input", "name": "option", "message": message}]
+    menu = [
+        {"type": "input", "name": "option", "message": message, "default": defaultval}
+    ]
     answers = prompt(menu)
     return check_cancel(answers.get("option"))
 

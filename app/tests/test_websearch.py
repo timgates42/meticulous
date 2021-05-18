@@ -6,7 +6,7 @@ import logging
 
 import pytest
 
-from meticulous._websearch import Suggestion, get_suggestion
+from meticulous._websearch import Suggestion, search_suggestion
 
 
 @pytest.mark.parametrize(
@@ -15,7 +15,6 @@ from meticulous._websearch import Suggestion, get_suggestion
         ("catenate", Suggestion(is_nonword=True)),
         ("actuall", Suggestion(is_typo=True)),
         ("altnernatives", Suggestion(is_typo=True, replacement="alternatives")),
-        ("pressent", Suggestion(is_typo=True, replacement="present")),
         ("cssrewrite", Suggestion(is_nonword=True)),
     ],
 )
@@ -26,6 +25,8 @@ def test_suggestions(caplog, word, expected):
     # Setup
     with caplog.at_level(logging.INFO):
         # Exercise
-        obtained = get_suggestion(word)
+        obtained = search_suggestion(word)
     # Verify
-    assert obtained == expected  # noqa: S101 # nosec
+    assert obtained.is_nonword == expected.is_nonword  # noqa: S101 # nosec
+    assert obtained.is_typo == expected.is_typo  # noqa: S101 # nosec
+    assert obtained.replacement == expected.replacement  # noqa: S101 # nosec

@@ -23,10 +23,11 @@ def test_add_async():
         return run
 
     pool = get_pool({"run": load_run})
-    # Exercise
-    pool.add({"name": "run"}, None)
-    # Verify
-    pool.stop()
+    with pool:
+        # Exercise
+        pool.add({"name": "run"}, None)
+        # Verify
+        pool.stop()
     assert result[0]  # noqa=S101 # nosec
 
 
@@ -47,18 +48,19 @@ def test_shutdown():
         return run
 
     pool = get_pool({"run": load_run}, max_workers=2)
-    taskjson = {"name": "run"}
-    for _ in range(10):
-        pool.add(taskjson, None)
-    with cond:
-        while running[0] < 2:
-            cond.wait()
-    pool.drain()
-    with cond:
-        cond.notify()
-        cond.notify()
-    pool.stop()
-    # Exercise
-    result = pool.save()
+    with pool:
+        taskjson = {"name": "run"}
+        for _ in range(10):
+            pool.add(taskjson, None)
+        with cond:
+            while running[0] < 2:
+                cond.wait()
+        pool.drain()
+        with cond:
+            cond.notify()
+            cond.notify()
+        pool.stop()
+        # Exercise
+        result = pool.save()
     # Verify
     assert result == ([taskjson] * 8)  # noqa=S101 # nosec

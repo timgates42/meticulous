@@ -5,24 +5,26 @@ Work through nonwords to find a typo
 import collections
 import io
 import json
+import logging
 import os
 import pathlib
 import re
 from pathlib import Path
 
 from colorama import Fore, Style
-from plumbum import FG, local
+from plumbum import FG, ProcessExecutionError, local
 from spelling.check import context_to_filename
 from workflow.engine import GenericWorkflowEngine
 from workflow.errors import HaltProcessing
 
+from meticulous._constants import ALWAYS_BATCH_MODE
 from meticulous._nonword import (
     add_non_word,
     check_nonwords,
     is_local_non_word,
     update_nonwords,
 )
-from meticulous._storage import get_json_value, set_json_value
+from meticulous._storage import get_json_value, get_multi_repo, set_multi_repo
 from meticulous._websearch import Suggestion
 
 
@@ -32,9 +34,9 @@ class NonwordState:  # pylint: disable=too-few-public-methods
     """
 
     def __init__(  # pylint: disable=too-many-arguments
-        self, context, target, word, details, repopath, nonword_delegate
+        self, interaction, target, word, details, repopath, nonword_delegate
     ):
-        self.context = context
+        self.interaction = interaction
         self.target = target
         self.word = word
         self.details = details
@@ -61,10 +63,11 @@ def collect_nonwords(context):
         reponame = context.taskjson["reponame"]
         if reponame in get_json_value("repository_map", {}):
             interactive_task_collect_nonwords(
-                context,
+                context.interaction,
                 reponame,
                 target,
                 nonword_delegate=noninteractive_nonword_delegate(context),
+                nonstop=ALWAYS_BATCH_MODE,
             )
             context.controller.add(
                 {
@@ -101,157 +104,181 @@ def noninteractive_nonword_delegate(context):
     return handler
 
 
-def interactive_nonword_delegate(context, target):
+def interactive_nonword_delegate(interaction, target):
     """
     Obtain a basic interactive nonword update
     """
 
     def handler():
         pullreq = update_nonwords(target)
-        context.interaction.send(
-            f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}"
-        )
+        interaction.send(f"Created PR #{pullreq.number} view at" f" {pullreq.html_url}")
 
     return handler
 
 
 def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
-    context, reponame, target, nonword_delegate=None, nonstop=False
+    interaction, reponame, target, nonword_delegate=None, nonstop=False
 ):
     """
     Saves nonwords until a typo is found
     """
     if nonword_delegate is None:
-        nonword_delegate = interactive_nonword_delegate(context, target)
+        nonword_delegate = interactive_nonword_delegate(interaction, target)
     key = "repository_map"
     repository_map = get_json_value(key, {})
     repodir = repository_map[reponame]
     repodirpath = Path(repodir)
     jsonpath = repodirpath / "spelling.json"
     if not jsonpath.is_file():
-        context.interaction.send(f"Unable to locate spelling at {jsonpath}")
+        interaction.send(f"Unable to locate spelling at {jsonpath}")
         return
     with io.open(jsonpath, "r", encoding="utf-8") as fobj:
         jsonobj = json.load(fobj)
-    completed = interactive_task_collect_nonwords_run(
-        context, repodirpath, target, nonstop, nonword_delegate, jsonobj
+    state = NonwordState(
+        interaction=interaction,
+        target=target,
+        word=None,
+        details=None,
+        repopath=repodirpath,
+        nonword_delegate=nonword_delegate,
     )
+    completed = interactive_task_collect_nonwords_run(state, nonstop, jsonobj)
     if completed:
-        context.interaction.send(
+        interaction.send(
             f"{Fore.YELLOW}Found all words" f" for {reponame}!{Style.RESET_ALL}"
         )
 
 
-def interactive_task_collect_nonwords_run(
-    context, repodirpath, target, nonstop, nonword_delegate, jsonobj
-):
+def interactive_task_collect_nonwords_run(state, nonstop, jsonobj):
     """
     Given the json state - saves nonwords until a typo is found
     """
-    wordchoice = get_sorted_words(context.interaction, jsonobj)
+    wordchoice = get_sorted_words(state.interaction, jsonobj)
     handler = WordChoiceHandler(wordchoice)
-    return handler.run(context, repodirpath, target, nonstop, nonword_delegate, jsonobj)
+    return handler.run(
+        state,
+        nonstop,
+        jsonobj,
+    )
 
 
-WordChoiceResult = collections.namedtuple("WordChoiceResult", ["skip", "completed"])
+WordChoiceResult = collections.namedtuple(
+    "WordChoiceResult", ["skip", "completed", "force_completed"]
+)
 
 
 class WordChoiceHandler:
+    """
+    State for picking a word from a selection
+    """
+
     def __init__(self, wordchoice):
         self.wordchoice = wordchoice
 
-    def run(self, context, repodirpath, target, nonstop, nonword_delegate, jsonobj):
+    def run(self, state, nonstop, jsonobj):
+        """
+        Main word selection handler.
+        """
         print("selecting words")
         while self.wordchoice:
-            result = self.select(
-                context, repodirpath, target, nonword_delegate, jsonobj
-            )
+            result = self.select(state, jsonobj)
+            if result.force_completed:
+                break
             if result.completed and not nonstop:
                 return False
             if result.skip:
                 return False
         print("selecting words completed")
+        state.interaction.complete_repo()
         return True
 
-    def select(self, context, repodirpath, target, nonword_delegate, jsonobj):
-        choices = self.get_choices(
-            context, repodirpath, target, nonword_delegate, jsonobj
-        )
+    def select(self, state, jsonobj):
+        """
+        Provide a selection of options for choice
+        """
+        choices = self.get_choices(state, jsonobj)
         print(f"make choice {len(choices)}")
-        handler = context.interaction.make_choice(choices)
+        handler = state.interaction.make_choice(choices)
         return handler()
 
-    def get_choices(self, context, repodirpath, target, nonword_delegate, jsonobj):
+    def get_choices(self, state, jsonobj):
+        """
+        Prepare the list of options
+        """
+
+        def complete_handler():
+            """
+            Finish processing
+            """
+            return WordChoiceResult(skip=False, completed=True, force_completed=True)
+
         def skip_handler():
             """
             Finish processing early
             """
-            return WordChoiceResult(skip=True, completed=False)
+            return WordChoiceResult(skip=True, completed=False, force_completed=False)
 
-        txt = "99) Skip repository."
-        choices = {txt: skip_handler}
+        ctxt = "98) Complete repository."
+        stxt = "99) Skip repository."
+        choices = {ctxt: complete_handler, stxt: skip_handler}
         for txt, word in self.wordchoice:
-            choices[txt] = WordHandler(
-                self, word, context, repodirpath, target, nonword_delegate, jsonobj
-            )
+            choices[txt] = WordHandler(self, word, state, jsonobj)
         return choices
 
-    def remove(self, handler):
-        for txt, check in self.wordchoice:
-            if check is handler:
-                del self.wordchoice[txt]
+    def remove(self, word):
+        """
+        Given a word to drop from the selection locate it and remove it
+        """
+        for index, txtword in enumerate(self.wordchoice):
+            if txtword[0] == word:
+                del self.wordchoice[index]
                 return
 
 
-class WordHandler:
+class WordHandler:  # pylint: disable=too-few-public-methods
+    """
+    Action to take if a word is selected
+    """
+
     def __init__(
         self,
         choicehandler,
         word,
-        context,
-        repodirpath,
-        target,
-        nonword_delegate,
+        state,
         jsonobj,
     ):
         self.choicehandler = choicehandler
         self.word = word
-        self.context = context
-        self.repodirpath = repodirpath
-        self.target = target
-        self.nonword_delegate = nonword_delegate
+        self.state = state
         self.jsonobj = jsonobj
 
     def __call__(self):
         completed = interactive_new_word(
-            self.context,
-            self.repodirpath,
-            self.target,
-            self.nonword_delegate,
+            self.state,
             self.jsonobj,
             self.word,
         )
-        self.choicehandler.remove(self)
-        return WordChoiceResult(skip=False, completed=completed)
+        self.choicehandler.remove(self.word)
+        return WordChoiceResult(skip=False, completed=completed, force_completed=False)
 
 
-def interactive_new_word(context, repodirpath, target, nonword_delegate, jsonobj, word):
+def interactive_new_word(state, jsonobj, word):
     """
     Single word processing
     """
     details = jsonobj[word]
     suggestion = details.get("suggestion_obj")
-    show_word(context.interaction, word, details)
+    show_word(state.interaction, word, details)
 
     def nonword_call():
         """
         Selected nonword option
         """
-        return handle_nonword(word, target, nonword_delegate)
+        return handle_nonword(word, state.target, state.nonword_delegate)
 
     choices = {
         "1) Typo": lambda: (
-            handle_typo(context.interaction, word, details, repodirpath)
+            handle_typo(state.interaction, word, details, state.repopath)
         ),
         "2) Non-word": nonword_call,
         "3) Skip": lambda: False,
@@ -264,34 +291,34 @@ def interactive_new_word(context, repodirpath, target, nonword_delegate, jsonobj
             if suggestion.replacement:
                 text = f"0) Suggest using {suggestion.replacement}, agree?"
                 choices[text] = lambda: fix_word(
-                    context.interaction,
+                    state.interaction,
                     word,
                     details,
                     suggestion.replacement,
-                    repodirpath,
+                    state.repopath,
                 )
-    result = context.interaction.make_choice(choices)
+    result = state.interaction.make_choice(choices)
     return result()
 
 
-def interactive_old_word(context, repodirpath, target, nonword_delegate, jsonobj, word):
+def interactive_old_word(state, jsonobj, word):
     """
     Single word processing
     """
     my_engine = GenericWorkflowEngine()
     my_engine.callbacks.replace([check_websearch, is_nonword, is_typo, what_now])
-    state = NonwordState(
-        context=context,
-        target=target,
+    newstate = NonwordState(
+        interaction=state.interaction,
+        target=state.target,
         word=word,
         details=jsonobj[word],
-        repopath=repodirpath,
-        nonword_delegate=nonword_delegate,
+        repopath=state.repopath,
+        nonword_delegate=state.nonword_delegate,
     )
     try:
-        my_engine.process([state])
+        my_engine.process([newstate])
     except HaltProcessing:
-        if state.done:
+        if newstate.done:
             return True
     return False
 
@@ -336,9 +363,9 @@ def check_websearch(obj, eng):
     suggestion = obj.details.get("suggestion_obj")
     if suggestion is None:
         return
-    show_word(obj.context.interaction, obj.word, obj.details)
+    show_word(obj.interaction, obj.word, obj.details)
     if suggestion.is_nonword:
-        is_non_word_check = obj.context.interaction.get_confirmation(
+        is_non_word_check = obj.interaction.get_confirmation(
             "Web search suggests it is a non-word, agree?"
         )
         if is_non_word_check:
@@ -353,13 +380,13 @@ def check_websearch(obj, eng):
                 )
                 for prefix, suffix in [("", ""), (Fore.CYAN, Style.RESET_ALL)]
             ]
-            obj.context.interaction.send(msgs[-1])
-            suggestion_check = obj.context.interaction.get_confirmation(
+            obj.interaction.send(msgs[-1])
+            suggestion_check = obj.interaction.get_confirmation(
                 msgs[0], defaultval=False
             )
             if suggestion_check:
                 fix_word(
-                    obj.context.interaction,
+                    obj.interaction,
                     obj.word,
                     obj.details,
                     suggestion.replacement,
@@ -371,12 +398,12 @@ def check_websearch(obj, eng):
             (f"Web search suggests using {prefix}" f"typo{suffix}, agree?")
             for prefix, suffix in [("", ""), (Fore.RED, Style.RESET_ALL)]
         ]
-        obj.context.interaction.send(msgs[-1])
-        last_suggestion_check = obj.context.interaction.get_confirmation(
+        obj.interaction.send(msgs[-1])
+        last_suggestion_check = obj.interaction.get_confirmation(
             msgs[0], defaultval=False
         )
         if last_suggestion_check:
-            handle_typo(obj.context.interaction, obj.word, obj.details, obj.repopath)
+            handle_typo(obj.interaction, obj.word, obj.details, obj.repopath)
             obj.done = True
             eng.halt("found typo")
 
@@ -385,8 +412,8 @@ def is_nonword(obj, eng):
     """
     Quick initial check to see if it is a nonword.
     """
-    show_word(obj.context.interaction, obj.word, obj.details)
-    if obj.context.interaction.get_confirmation("Is non-word?"):
+    show_word(obj.interaction, obj.word, obj.details)
+    if obj.interaction.get_confirmation("Is non-word?"):
         handle_nonword(obj.word, obj.target, obj.nonword_delegate)
         eng.halt("found nonword")
 
@@ -395,9 +422,9 @@ def is_typo(obj, eng):
     """
     Quick initial check to see if it is a typo.
     """
-    show_word(obj.context.interaction, obj.word, obj.details)
-    if obj.context.interaction.get_confirmation("Is it typo?"):
-        handle_typo(obj.context.interaction, obj.word, obj.details, obj.repopath)
+    show_word(obj.interaction, obj.word, obj.details)
+    if obj.interaction.get_confirmation("Is it typo?"):
+        handle_typo(obj.interaction, obj.word, obj.details, obj.repopath)
         obj.done = True
         eng.halt("found typo")
 
@@ -406,8 +433,8 @@ def what_now(obj, eng):
     """
     Check to see what else to do.
     """
-    show_word(obj.context.interaction, obj.word, obj.details)
-    obj.context.interaction.send("Todo what now options?")
+    show_word(obj.interaction, obj.word, obj.details)
+    obj.interaction.send("Todo what now options?")
     eng.halt("what now?")
 
 
@@ -530,11 +557,15 @@ def fix_word(interaction, word, details, newspell, repopath):
         relpath = str(filepath.relative_to(repopath))
         # plumbum bug workaround
         os.chdir(pathlib.Path.home())
-        with local.cwd(str(repopath)):
-            _ = git["add"][relpath] & FG
-        file_paths.append(relpath)
+        try:
+            with local.cwd(str(repopath)):
+                _ = git["add"][relpath] & FG
+        except ProcessExecutionError:
+            logging.exception("Failed to update %s", relpath)
+        else:
+            file_paths.append(relpath)
     if file_paths:
-        add_repo_save(str(repopath), newspell, word, file_paths)
+        interaction.add_repo_save(repopath, newspell, word, file_paths)
     return True
 
 
@@ -564,12 +595,15 @@ def add_repo_save(repodir, add_word, del_word, file_paths):
     """
     Record a typo correction
     """
-    saves = get_json_value("repository_saves", {})
     reponame = Path(repodir).name
-    saves[reponame] = {
-        "add_word": add_word,
-        "del_word": del_word,
-        "file_paths": file_paths,
-        "repodir": repodir,
-    }
-    set_json_value("repository_saves", saves)
+    saves = get_multi_repo(reponame)
+    saves.append(
+        {
+            "reponame": reponame,
+            "add_word": add_word,
+            "del_word": del_word,
+            "file_paths": file_paths,
+            "repodir": repodir,
+        }
+    )
+    set_multi_repo(reponame, saves)

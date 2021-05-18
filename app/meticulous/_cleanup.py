@@ -18,7 +18,7 @@ def remove_repo_for(repo, repodir, confirm=True):
         try:
             del repository_map[repo]
             set_json_value(name, repository_map)
-        except KeyError:
+        except (KeyError, TypeError):
             continue
     if confirm:
         option = make_simple_choice(["Yes", "No"], "Delete the directory?")
