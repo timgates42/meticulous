@@ -22,8 +22,9 @@ def test_add():
         handlers=handlers, input_queue=input_queue, threadpool=threadpool
     )
     task = {"interactive": True, "priority": 1}
-    # Exercise
-    controller.add(task)
+    with controller:
+        # Exercise
+        controller.add(task)
     # Verify
     assert input_queue.pop() == task  # noqa=S101 # nosec
 
@@ -51,14 +52,15 @@ def test_save():
     task = {"interactive": True, "priority": 1}
     runtask = {"interactive": False, "name": "1"}
     pendingtask = {"interactive": False, "name": "1"}
-    controller.add(task)
-    controller.add(runtask)
-    controller.add(pendingtask)
-    threadpool.drain()
-    with cond:
-        cond.notify()
-    # Exercise
-    result = controller.save()
+    with controller:
+        controller.add(task)
+        controller.add(runtask)
+        controller.add(pendingtask)
+        threadpool.drain()
+        with cond:
+            cond.notify()
+        # Exercise
+        result = controller.save()
     # Verify
     assert result == [task, pendingtask]  # noqa=S101 # nosec
 
@@ -83,10 +85,11 @@ def test_user_shutdown():
     )
     task = {"interactive": True, "priority": 1, "name": "1"}
     nexttask = {"interactive": True, "priority": 2, "name": "1"}
-    controller.add(task)
-    controller.add(nexttask)
-    interaction = KeyboardInteraction()
-    # Exercise
-    result = controller.run(interaction)
+    with controller:
+        controller.add(task)
+        controller.add(nexttask)
+        interaction = KeyboardInteraction()
+        # Exercise
+        result = controller.run(interaction)
     # Verify
     assert result == [nexttask]  # noqa=S101 # nosec
