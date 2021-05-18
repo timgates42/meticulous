@@ -313,7 +313,8 @@ def multiworker_core(interaction, target):
     controller = Controller(
         handlers=handlers, input_queue=input_queue, threadpool=threadpool, target=target
     )
-    for task in workload:
-        controller.add(task)
-    result = controller.run(interaction)
-    set_json_value(key, result)
+    with controller:
+        for task in workload:
+            controller.add(task)
+        result = controller.run(interaction)
+        set_json_value(key, result)
