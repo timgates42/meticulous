@@ -32,7 +32,7 @@ def get_note(kind, pr_url=None):
         f"https://github.com/timgates42/meticulous"
         f"/blob/master/docs/NOTE.md"
     )
-    if kind != 'issue' or pr_url is None:
+    if kind != "issue" or pr_url is None:
         return header
     api = get_api()
     user_org = api.get_user().login
