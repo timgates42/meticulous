@@ -197,7 +197,7 @@ def spelling_check(repo, target):
     """
     repodir = target / repo
     jsonpath = repodir / "spelling.json"
-    procobj = subprocess.Popen(  # noqa=S603 # nosec
+    with subprocess.Popen(  # noqa=S603 # nosec
         [
             sys.executable,
             "-m",
@@ -212,10 +212,10 @@ def spelling_check(repo, target):
         stdout=subprocess.PIPE,
         stdin=None,
         stderr=subprocess.PIPE,
-    )
-    stdout, stderr = procobj.communicate()
-    if procobj.returncode not in (0, 1):
-        raise Exception(f"Error checking spelling:\n{stderr}\n{stdout}")
+    ) as procobj:
+        stdout, stderr = procobj.communicate()
+        if procobj.returncode not in (0, 1):
+            raise Exception(f"Error checking spelling:\n{stderr}\n{stdout}")
     with io.open(jsonpath, "r", encoding="utf-8") as fobj:
         jsonobj = json.load(fobj)
     jsonobj = update_json_results(repo, jsonobj)
