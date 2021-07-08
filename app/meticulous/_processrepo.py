@@ -449,13 +449,13 @@ def show_word(interaction, word, details):  # pylint: disable=unused-argument
     max_files = 4
     for filename in files[:max_files]:
         interaction.send(f"{filename}:")
-        with io.open(filename, "r", encoding="utf-8") as fobj:
+        with open(filename, "rb") as fobj:
             show_next = False
             prev_line = None
             shown = 0
             max_shown = 3
-            for line in fobj:
-                line = line.rstrip("\r\n")
+            for linedata in fobj:
+                line = linedata.decode("utf-8", "replace").rstrip("\r\n")
                 output = get_colourized(line, word)
                 if output:
                     if shown < max_shown:
