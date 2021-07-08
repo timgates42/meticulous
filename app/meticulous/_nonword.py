@@ -28,7 +28,7 @@ def get_unanimous(target):
     Ensure the local unanimous is loaded and return the path
     """
     orgrepo = "resplendent-dev/unanimous"
-    repo = orgrepo.split("/")[-1]
+    repo = orgrepo.split("/", 1)[-1]
     if not check_forked(orgrepo):
         fork(orgrepo)
     checkoutpath = target / repo
