@@ -22,6 +22,12 @@ from meticulous._storage import get_multi_repo
 from meticulous._summary import display_and_check_files
 from meticulous._util import get_editor
 
+# Change in GitHub CI policy -
+# https://github.blog/2021-04-22-github-actions-update-helping-maintainers-combat-bad-actors/
+# pointed out in https://github.com/translate/translate/issues/4382
+# no need to create issues first
+CREATE_ISSUE_FIRST = False
+
 
 def get_note(kind, pr_url=None):
     """
@@ -226,7 +232,7 @@ def issue_and_branch_for(reponame, repository_saves_multi):
     repodir = reposave["repodir"]
     repodirpath = Path(repodir)
     no_issues_path = repodirpath / no_issues
-    if no_issues_path.is_file():
+    if no_issues_path.is_file() or not CREATE_ISSUE_FIRST:
         plain_pr_for(reponame, repository_saves_multi)
         return
     make_a_commit_multi(reponame, repository_saves_multi, False)
