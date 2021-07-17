@@ -262,6 +262,19 @@ class WordHandler:  # pylint: disable=too-few-public-methods
         return WordChoiceResult(skip=False, completed=completed, force_completed=False)
 
 
+def gen_fix_word(interaction, word, details, replacement, repopath):
+    """
+    Create call delegate for fix_word
+    """
+    def call_fix_word():
+        """
+        The call delegate for fix_word
+        """
+        return fix_word(interaction, word, details, replacement, repopath)
+
+    return call_fix_word
+
+
 def interactive_new_word(state, jsonobj, word):
     """
     Single word processing
@@ -288,15 +301,17 @@ def interactive_new_word(state, jsonobj, word):
             text = "0) Suggest non-word, agree?"
             choices[text] = nonword_call
         if suggestion.is_typo:
-            if suggestion.replacement:
-                text = f"0) Suggest using {suggestion.replacement}, agree?"
-                choices[text] = lambda: fix_word(
-                    state.interaction,
-                    word,
-                    details,
-                    suggestion.replacement,
-                    state.repopath,
-                )
+            if suggestion.replacement_list:
+                for index, replacement in suggestion.replacement_list:
+                    numtxt = str(index).zfill(3)
+                    text = f"{numtxt}) Suggest using {replacement}, agree?"
+                    choices[text] = gen_fix_word(
+                        state.interaction,
+                        word,
+                        details,
+                        replacement,
+                        state.repopath,
+                    )
     result = state.interaction.make_choice(choices)
     return result()
 
