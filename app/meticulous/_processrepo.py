@@ -302,7 +302,7 @@ def interactive_new_word(state, jsonobj, word):
             choices[text] = nonword_call
         if suggestion.is_typo:
             if suggestion.replacement_list:
-                for index, replacement in suggestion.replacement_list:
+                for index, replacement in enumerate(suggestion.replacement_list):
                     numtxt = str(index).zfill(3)
                     text = f"{numtxt}) Suggest using {replacement}, agree?"
                     choices[text] = gen_fix_word(
