@@ -13,7 +13,8 @@ import requests
 from bs4 import BeautifulSoup
 
 from meticulous._storage import get_json_value, set_json_value
-from meticulous._suggestion import Suggestion, get_suggestion as codespell
+from meticulous._suggestion import Suggestion
+from meticulous._suggestion import get_suggestion as codespell
 
 DICTIONARIES = [
     "https://www.merriam-webster.com/dictionary/",
