@@ -14,7 +14,7 @@ from meticulous._websearch import Suggestion, search_suggestion
     [
         ("catenate", Suggestion(is_nonword=True)),
         ("actuall", Suggestion(is_typo=True)),
-        ("altnernatives", Suggestion(is_typo=True, replacement="alternatives")),
+        ("altnernatives", Suggestion(is_typo=True, replacement_list=["alternatives"])),
         ("cssrewrite", Suggestion(is_nonword=True)),
     ],
 )

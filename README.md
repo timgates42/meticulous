@@ -42,6 +42,7 @@ $ pip install meticulous
 - psycopg2
 - ansi2html
 - flask
+- codespell
 
 
 ## Download from PyPI.org

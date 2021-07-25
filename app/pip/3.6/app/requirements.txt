@@ -10,3 +10,4 @@ colorama
 psycopg2
 ansi2html
 flask
+codespell

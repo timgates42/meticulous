@@ -13,54 +13,8 @@ import requests
 from bs4 import BeautifulSoup
 
 from meticulous._storage import get_json_value, set_json_value
-
-
-class Suggestion:
-    """
-    Keep details of a websearch suggestion
-    """
-
-    def __init__(self, is_nonword=False, is_typo=False, replacement=""):
-        self.is_nonword = is_nonword
-        self.is_typo = is_typo
-        self.replacement = replacement
-        self.priority = (
-            3
-            if self.replacement
-            else (2 if self.is_typo else (1 if self.is_nonword else 0))
-        )
-
-    def __eq__(self, other):
-        """
-        Check equality
-        """
-        return (
-            self.is_nonword == getattr(other, "is_nonword", None)
-            and self.is_typo == getattr(other, "is_typo", None)
-            and self.replacement == getattr(other, "replacement", None)
-        )
-
-    def save(self):
-        """
-        Save to json dict
-        """
-        return {
-            "is_nonword": self.is_nonword,
-            "is_typo": self.is_typo,
-            "replacement": self.replacement,
-        }
-
-    @classmethod
-    def load(cls, data):
-        """
-        Load from json dict
-        """
-        return cls(
-            is_nonword=bool(data.get("is_nonword")),
-            is_typo=bool(data.get("is_typo")),
-            replacement=data.get("replacement", ""),
-        )
-
+from meticulous._suggestion import Suggestion
+from meticulous._suggestion import get_suggestion as codespell
 
 DICTIONARIES = [
     "https://www.merriam-webster.com/dictionary/",
@@ -112,7 +66,11 @@ class GoogleLock:
 def get_suggestion(word):
     """
     Use the internet to determine if the provided word is a nonword or a typo
+    if a suggestion is not found in codespell
     """
+    suggestion = codespell(word)
+    if suggestion is not None:
+        return suggestion
     key = f"suggestion.{word}"
     existing = get_json_value(key)
     if existing is not None:
@@ -187,7 +145,7 @@ def check_replacement(word, replacement):
     """
     if replacement.replace(" ", "") == word:
         return Suggestion(is_nonword=True)
-    return Suggestion(is_typo=True, replacement=replacement)
+    return Suggestion(is_typo=True, replacement_list=[replacement])
 
 
 GOOGLE_LOCK = GoogleLock()

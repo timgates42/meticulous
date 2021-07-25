@@ -1,13 +1,10 @@
 # Docker based build via ./ci.sh
-
+---
 trigger:
-- master
-
+  - master
 jobs:
-
-- job: 'Docker'
-  pool:
-    vmImage: 'ubuntu-16.04'
-
-  steps:
-  - script: ./ci.sh
+  - job: 'Docker'
+    pool:
+      vmImage: 'ubuntu-20.04'
+    steps:
+      - script: ./ci.sh

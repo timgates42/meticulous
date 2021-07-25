@@ -25,7 +25,7 @@
     "build_url": "https://dev.azure.com/{{ cookiecutter.azure_user }}/{{ cookiecutter.azure_project }}/_build/latest?definitionId={{ cookiecutter.azure_buildid }}&branchName=master",
     "pypi_name": "{{ cookiecutter.project_name }}",
     "readthedocs_name": "{{ cookiecutter.project_name }}",
-    "app_requirements": "PyGithub\nplumbum\nspelling>=0.6.3\ndataset<1.2.0\nunanimous>=0.6.4\nPyInquirer\nrequests\nworkflow\ncolorama\npsycopg2\nansi2html\nflask",
+    "app_requirements": "PyGithub\nplumbum\nspelling>=0.6.3\ndataset<1.2.0\nunanimous>=0.6.4\nPyInquirer\nrequests\nworkflow\ncolorama\npsycopg2\nansi2html\nflask\ncodespell",
     "cov_fail_under": "35",
     "travis_status_url": "https://travis-ci.org/{{ cookiecutter.github_org }}/{{ cookiecutter.github_repo }}.svg?branch=master",
     "travis_build_url": "https://travis-ci.org/{{ cookiecutter.github_org }}/{{ cookiecutter.github_repo }}",
@@ -48,6 +48,6 @@
     "extra_manifest": "",
     "test_requires": "",
     "latest_python": "3.9",
-    "supported_python": "\"3.9\" \"3.8\" \"3.7\" \"3.6\"",
+    "supported_python": "\"3.9\" \"3.8\"",
     "extra_installs": "gcc musl-dev postgresql-dev"
 }
