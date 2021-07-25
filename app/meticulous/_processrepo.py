@@ -266,6 +266,7 @@ def gen_fix_word(interaction, word, details, replacement, repopath):
     """
     Create call delegate for fix_word
     """
+
     def call_fix_word():
         """
         The call delegate for fix_word
