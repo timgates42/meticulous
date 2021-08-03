@@ -78,10 +78,20 @@ def get_suggestion(word):
             return None
         return Suggestion.load(existing)
     suggestion = search_suggestion(word)
+    suggestion = validate_suggestion(suggestion, word)
     if suggestion is None:
         set_json_value(key, {"no_suggestion": True})
         return None
     set_json_value(key, suggestion.save())
+    return suggestion
+
+
+def validate_suggestion(suggestion, word):
+    """
+    Make sure suggestions are not much longer than the original word
+    """
+    if len(suggestion.replacement) > len(word) * 2:
+        return Suggestion(is_typo=True)
     return suggestion
 
 
