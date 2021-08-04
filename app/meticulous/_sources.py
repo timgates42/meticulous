@@ -58,7 +58,7 @@ def check_url(url):
     key = f"github_links|{url}"
     datetxt = get_value(dkey)
     if datetxt is not None:
-        dobj = datetime.strptime(datetxt, TIME_FMT)
+        dobj = datetime.datetime.strptime(datetxt, TIME_FMT)
         if dobj + datetime.timedelta(days=CACHE_TIME_DAYS) > now:
             results = get_value(key)
     if results is None:
