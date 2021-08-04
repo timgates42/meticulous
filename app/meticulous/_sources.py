@@ -55,11 +55,11 @@ def check_url(url):
     now = datetime.datetime.now()
     results = None
     dkey = f"github_links_datetxt|{url}"
+    key = f"github_links|{url}"
     datetxt = get_value(dkey)
     if datetxt is not None:
         dobj = datetime.strptime(datetxt, TIME_FMT)
         if dobj + datetime.timedelta(days=CACHE_TIME_DAYS) > now:
-            key = f"github_links|{url}"
             results = get_value(key)
     if results is None:
         results = "\n".join(get_all_markdown_github_links(url))
