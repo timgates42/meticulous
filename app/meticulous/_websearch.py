@@ -90,6 +90,8 @@ def validate_suggestion(suggestion, word):
     """
     Make sure suggestions are not much longer than the original word
     """
+    if suggestion is None:
+        return None
     if len(suggestion.replacement) > len(word) * 2:
         return Suggestion(is_typo=True)
     return suggestion
