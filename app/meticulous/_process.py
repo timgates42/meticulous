@@ -50,7 +50,7 @@ def get_spelling_store_path(target):
     return path / "spelling.db"
 
 
-def run_invocation(target):
+def run_invocation(target, start):
     """
     Execute the invocation
     """
@@ -66,8 +66,8 @@ def run_invocation(target):
     load_recent_non_words(target)
     validate_versions()
     try:
-        if get_confirmation("Run webserver?"):
-            webserver_main(target)
+        if start or get_confirmation("Run webserver?"):
+            webserver_main(target, start)
         elif get_confirmation("Run automated multi-queue processing?"):
             multiworker_main(target)
         else:

@@ -18,22 +18,24 @@ __version__ = "0.1"
 @click.group(context_settings=CONTEXT_SETTINGS, invoke_without_command=True)
 @click.version_option(version=__version__)
 @click.option("--target", nargs=1)
+@click.option("--start/--no-start", default=False)
 @click.pass_context
-def main(ctxt, target):
+def main(ctxt, target, start):
     """
     Main click group handler
     """
     if ctxt.invoked_subcommand is None:
-        run_invocation(target)
+        run_invocation(target, start)
 
 
 @main.command()
 @click.option("--target", nargs=1)
-def invoke(target):
+@click.option("--start/--no-start", default=False)
+def invoke(target, start):
     """
     Primary command handler
     """
-    run_invocation(target)
+    run_invocation(target, start)
 
 
 @main.command()

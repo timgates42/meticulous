@@ -18,12 +18,15 @@ def index():
     return STATE.response()
 
 
-def main(target):
+def main(target, start):
     """
     Alternative way of running meticulous in a browser
     """
-    host = get_input("Listen Address: ", "0.0.0.0")  # nosec=B104
-    port = int(get_input("Listen Port: ", "3080"))
+    host = "0.0.0.0"  # nosec=B104
+    port = 3080
+    if not start:
+        host = get_input("Listen Address: ", host)
+        port = int(get_input("Listen Port: ", str(port)))
     run_app(target, host, port)
 
 
