@@ -78,7 +78,7 @@ def get_db():
     Connect to the database
     """
     try:
-        return psycopg2.connect(dbname="meticuloous")
+        return psycopg2.connect(dbname="meticulous")
     except psycopg2.OperationalError:
         pass
     if getattr(threading.local(), "worker", False):
