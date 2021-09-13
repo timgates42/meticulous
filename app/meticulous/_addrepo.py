@@ -155,13 +155,15 @@ def non_interactive_pickrepo():
     """
     Select next free repo
     """
-    forking = []
+    return_orgrepo = None
     return_repo = None
+    return_origrepo = None
     with LOCK:
         repository_forked = get_json_value("repository_forked", {})
         for orgrepo in obtain_sources():
             _, origrepo = orgrepo.split("/", 1)
             if origrepo in repository_forked:
+                print(f"Already forked (db) {orgrepo}")
                 continue
             try:
                 orgrepo = get_true_orgrepo(orgrepo)
@@ -169,25 +171,33 @@ def non_interactive_pickrepo():
                 continue
             _, repo = orgrepo.split("/", 1)
             if repo in repository_forked:
+                print(f"Already forked (db-legacy) {orgrepo}")
                 continue
             if check_forked(orgrepo):
+                print(f"Already forked (github) {orgrepo}")
                 repository_forked[origrepo] = True
                 repository_forked[repo] = True
                 set_json_value("repository_forked", repository_forked)
                 continue
-            forking.append(orgrepo)
             if is_archived(orgrepo):
+                print(f"Skip archived fork (github) {orgrepo}")
                 repository_forked[origrepo] = True
                 repository_forked[repo] = True
                 set_json_value("repository_forked", repository_forked)
                 continue
-            repository_forked[origrepo] = True
-            repository_forked[repo] = True
-            set_json_value("repository_forked", repository_forked)
+            return_orgrepo = orgrepo
+            return_origrepo = origrepo
             return_repo = repo
             break
-    for orgrepo in forking:
-        fork(orgrepo)
+    if return_orgrepo is not None:
+        print(f"- Forking {return_orgrepo}")
+        fork(return_orgrepo)
+        if not check_forked(return_orgrepo):
+            raise Exception(f"Failed to fork {return_orgrepo}")
+        with LOCK:
+            repository_forked[return_origrepo] = True
+            repository_forked[return_repo] = True
+            set_json_value("repository_forked", repository_forked)
     return return_repo
 
 
