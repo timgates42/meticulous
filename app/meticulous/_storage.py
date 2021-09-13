@@ -17,11 +17,11 @@ def prepare():
     Ensure current db is ready for use
     """
     con = get_db()
-    with con.cursor() as cur:
-        if not check_table_exists(con, "config"):
+    if not check_table_exists(con, "config"):
+        with con.cursor() as cur:
             sql = "CREATE TABLE config ( key text, value text )"
             cur.execute(sql)
-        con.commit()
+            con.commit()
 
 
 def get_value(key, deflt=None):
@@ -76,7 +76,7 @@ def check_table_exists(con, table_name):
         # postgres
         sql = (
             "SELECT t.table_name FROM information_schema.tables t"
-            " WHERE t.table_schema='schema_name' AND t.table_name=%s"
+            " WHERE t.table_schema='public' AND t.table_name=%s"
         )
     else:
         # sqlite
