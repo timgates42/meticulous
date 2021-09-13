@@ -155,7 +155,9 @@ def non_interactive_pickrepo():
     """
     Select next free repo
     """
+    return_orgrepo = None
     return_repo = None
+    return_origrepo = None
     with LOCK:
         repository_forked = get_json_value("repository_forked", {})
         for orgrepo in obtain_sources():
@@ -183,12 +185,15 @@ def non_interactive_pickrepo():
                 repository_forked[repo] = True
                 set_json_value("repository_forked", repository_forked)
                 continue
+            return_orgrepo = orgrepo
             return_origrepo = origrepo
             return_repo = repo
             break
-    if return_repo is not None:
-        print(f"- Forking {return_repo}")
-        fork(return_repo)
+    if return_orgrepo is not None:
+        print(f"- Forking {return_orgrepo}")
+        fork(return_orgrepo)
+        if not check_forked(return_orgrepo):
+            raise Exception(f"Failed to fork {return_orgrepo}")
         with LOCK:
             repository_forked[return_origrepo] = True
             repository_forked[return_repo] = True
