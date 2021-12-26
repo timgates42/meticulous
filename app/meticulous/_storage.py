@@ -18,8 +18,10 @@ def prepare():
     """
     con = get_db()
     if not check_table_exists(con, "config"):
-        sql = "CREATE TABLE config ( key text, value text )"
-        con.execute(sql)
+        with con.cursor() as cur:
+            sql = "CREATE TABLE config ( key text, value text )"
+            cur.execute(sql)
+            con.commit()
 
 
 def get_value(key, deflt=None):
@@ -27,10 +29,12 @@ def get_value(key, deflt=None):
     Retrieve a stored key value or return a default
     """
     con = get_db()
-    sql = "SELECT value FROM config WHERE key = ?"
-    for (value,) in con.execute(sql, (key,)):
-        return value
-    return deflt
+    with con.cursor() as cur:
+        sql = "SELECT value FROM config WHERE key = %s"
+        cur.execute(sql, (key,))
+        for (value,) in cur:
+            return value
+        return deflt
 
 
 def set_value(key, value):
@@ -38,10 +42,11 @@ def set_value(key, value):
     Remove any old key values and insert a new key/value
     """
     con = get_db()
-    sql = "DELETE FROM config WHERE key = ?"
-    con.execute(sql, (key,))
-    sql = "INSERT INTO config ( key, value ) VALUES (?, ?)"
-    con.execute(sql, (key, value))
+    with con.cursor() as cur:
+        sql = "DELETE FROM config WHERE key = %s"
+        cur.execute(sql, (key,))
+        sql = "INSERT INTO config ( key, value ) VALUES (%s, %s)"
+        cur.execute(sql, (key, value))
     con.commit()
 
 
@@ -67,10 +72,20 @@ def check_table_exists(con, table_name):
     """
     Look in the database to see if table exists
     """
-    sql = "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
-    for _ in con.execute(sql, (table_name,)):
-        return True
-    return False
+    if hasattr(con, "info"):
+        # postgres
+        sql = (
+            "SELECT t.table_name FROM information_schema.tables t"
+            " WHERE t.table_schema='public' AND t.table_name=%s"
+        )
+    else:
+        # sqlite
+        sql = "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
+    with con.cursor() as cur:
+        cur.execute(sql, (table_name,))
+        for _ in cur:
+            return True
+        return False
 
 
 def get_db():
@@ -78,7 +93,7 @@ def get_db():
     Connect to the database
     """
     try:
-        return psycopg2.connect(dbname="meticuloous")
+        return psycopg2.connect(dbname="meticulous")
     except psycopg2.OperationalError:
         pass
     if getattr(threading.local(), "worker", False):
@@ -102,7 +117,9 @@ def get_multi_repo(reponame):
     Load multiple repository updates
     """
     return [
-        item for item in get_json_value(MULTI_SAVE_KEY) if item["reponame"] == reponame
+        item
+        for item in get_json_value(MULTI_SAVE_KEY, [])
+        if item["reponame"] == reponame
     ]
 
 
@@ -111,7 +128,9 @@ def set_multi_repo(reponame, value):
     Save multiple repository updates
     """
     save = value + [
-        item for item in get_json_value(MULTI_SAVE_KEY) if item["reponame"] != reponame
+        item
+        for item in get_json_value(MULTI_SAVE_KEY, [])
+        if item["reponame"] != reponame
     ]
     set_json_value(MULTI_SAVE_KEY, save)
 

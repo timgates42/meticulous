@@ -3,13 +3,18 @@ Obtain a list of repositories to check
 """
 from __future__ import absolute_import, division, print_function
 
+import datetime
 import re
 
 import requests
 
 from meticulous._storage import get_value, set_value
 
+TIME_FMT = "%Y-%m-%d %H:%M:%S"
+CACHE_TIME_DAYS = 7
+
 SOURCE_MARKDOWN_URLS = [
+    "https://raw.githubusercontent.com/timgates42/repository_list/main/README.md",
     "https://raw.githubusercontent.com/vinta/awesome-python/master/README.md",
     "https://raw.githubusercontent.com/shahraizali/awesome-django/master/README.md",
     "https://raw.githubusercontent.com/humiaozuzu/awesome-flask/master/README.md",
@@ -47,11 +52,19 @@ def check_url(url):
     """
     Download and process the
     """
+    now = datetime.datetime.now()
+    results = None
+    dkey = f"github_links_datetxt|{url}"
     key = f"github_links|{url}"
-    results = get_value(key)
+    datetxt = get_value(dkey)
+    if datetxt is not None:
+        dobj = datetime.datetime.strptime(datetxt, TIME_FMT)
+        if dobj + datetime.timedelta(days=CACHE_TIME_DAYS) > now:
+            results = get_value(key)
     if results is None:
         results = "\n".join(get_all_markdown_github_links(url))
         set_value(key, results)
+        set_value(dkey, now.strftime(TIME_FMT))
     return results.splitlines()
 
 

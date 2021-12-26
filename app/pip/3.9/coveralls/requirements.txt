@@ -1,1 +1,2 @@
 coveralls
+coverage==6.0b1
