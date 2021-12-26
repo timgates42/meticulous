@@ -117,7 +117,7 @@ def get_multi_repo(reponame):
     Load multiple repository updates
     """
     return [
-        item for item in get_json_value(MULTI_SAVE_KEY) if item["reponame"] == reponame
+        item for item in get_json_value(MULTI_SAVE_KEY, []) if item["reponame"] == reponame
     ]
 
 
@@ -126,7 +126,7 @@ def set_multi_repo(reponame, value):
     Save multiple repository updates
     """
     save = value + [
-        item for item in get_json_value(MULTI_SAVE_KEY) if item["reponame"] != reponame
+        item for item in get_json_value(MULTI_SAVE_KEY, []) if item["reponame"] != reponame
     ]
     set_json_value(MULTI_SAVE_KEY, save)
 

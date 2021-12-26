@@ -163,7 +163,6 @@ def non_interactive_pickrepo():
         for orgrepo in obtain_sources():
             _, origrepo = orgrepo.split("/", 1)
             if origrepo in repository_forked:
-                print(f"Already forked (db) {orgrepo}")
                 continue
             try:
                 orgrepo = get_true_orgrepo(orgrepo)
@@ -171,7 +170,6 @@ def non_interactive_pickrepo():
                 continue
             _, repo = orgrepo.split("/", 1)
             if repo in repository_forked:
-                print(f"Already forked (db-legacy) {orgrepo}")
                 continue
             if check_forked(orgrepo):
                 print(f"Already forked (github) {orgrepo}")
@@ -189,16 +187,25 @@ def non_interactive_pickrepo():
             return_origrepo = origrepo
             return_repo = repo
             break
+    success = True
     if return_orgrepo is not None:
         print(f"- Forking {return_orgrepo}")
-        fork(return_orgrepo)
-        if not check_forked(return_orgrepo):
-            raise Exception(f"Failed to fork {return_orgrepo}")
+        try:
+            fork(return_orgrepo)
+        except GithubException:
+            print(f"- Unable to fork {return_orgrepo}")
+            success = False
+        else:
+            if not check_forked(return_orgrepo):
+                raise Exception(f"Failed to fork {return_orgrepo}")
         with LOCK:
             repository_forked[return_origrepo] = True
             repository_forked[return_repo] = True
             set_json_value("repository_forked", repository_forked)
-    return return_repo
+    if success:
+        return return_repo
+    else:
+        return non_interactive_pickrepo()
 
 
 def spelling_check(repo, target):
