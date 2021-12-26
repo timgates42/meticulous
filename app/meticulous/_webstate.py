@@ -51,11 +51,11 @@ No interaction required yet, will reload.<br />
 setTimeout("location.reload()", 500);
 </script>
 """
-        return """
+        return f"""
 <html>
 <body>
 <style>
-input[type=button], input[type=submit], input[type=reset] {
+input[type=button], input[type=submit], input[type=reset] {'{'}
   background-color: #4CAF50;
   border: none;
   color: white;
@@ -64,19 +64,17 @@ input[type=button], input[type=submit], input[type=reset] {
   margin: 4px 2px;
   cursor: pointer;
   -webkit-appearance: none;
-}
+{'}'}
 
 
-table {
+table {'{'}
   width: 100%%;
-}
+{'}'}
 </style>
-%s
+{content}
 </body>
 </html>
-""" % (
-            content,
-        )
+"""
 
     def start(self, target):
         """
