@@ -204,8 +204,7 @@ def non_interactive_pickrepo():
             set_json_value("repository_forked", repository_forked)
     if success:
         return return_repo
-    else:
-        return non_interactive_pickrepo()
+    return non_interactive_pickrepo()
 
 
 def spelling_check(repo, target):
