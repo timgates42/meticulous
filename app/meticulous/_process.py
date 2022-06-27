@@ -38,6 +38,7 @@ from meticulous._submit import (
 )
 from meticulous._util import get_editor
 from meticulous._webserver import main as webserver_main
+from meticulous._slackmode import main as slackmode_main
 
 
 def get_spelling_store_path(target):
@@ -50,7 +51,7 @@ def get_spelling_store_path(target):
     return path / "spelling.db"
 
 
-def run_invocation(target, start):
+def run_invocation(target, start, slack_mode):
     """
     Execute the invocation
     """
@@ -66,7 +67,9 @@ def run_invocation(target, start):
     load_recent_non_words(target)
     validate_versions()
     try:
-        if start or get_confirmation("Run webserver?"):
+        if slack_mode:
+            slackmode_main(target)
+        elif start or get_confirmation("Run webserver?"):
             webserver_main(target, start)
         elif get_confirmation("Run automated multi-queue processing?"):
             multiworker_main(target)
