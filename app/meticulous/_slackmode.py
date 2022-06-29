@@ -3,11 +3,12 @@ Alternative way of running meticulous via slack conversations
 """
 
 import datetime
-import uuid
-from threading import Condition, Thread
+import os
+from threading import Condition
+
+import slack
 
 from meticulous._multiworker import Interaction, multiworker_core
-from meticulous._progress import get_progress
 
 INPUT = 0
 CONFIRMATION = 1
@@ -25,22 +26,12 @@ class SlackStateHandler(Interaction):
         self.messages = []
         self.await_key = None
         self.response_val = None
-        self.thread = None
 
     def response(self):
         """
         Return the current input requirement to the end user
         """
         raise NotImplementedError()
-
-    def start(self, target):
-        """
-        Begin processing
-        """
-        if self.thread is not None:
-            self.stop()
-        self.thread = Thread(target=self.run, args=(target,), name="webworker")
-        self.thread.start()
 
     def run(self, target):
         """
@@ -56,8 +47,6 @@ class SlackStateHandler(Interaction):
         Gracefully stop processing
         """
         self.alive = False
-        self.thread.join()
-        self.thread = None
         self.started_at = datetime.datetime.min
 
     def get_input(self, message):
@@ -125,15 +114,8 @@ class Confirmation(Awaiter):
 
     def handle(self, state):
         """
-        Handle form submission
+        Handle slack submission
         """
-        if request.form.get("uuid") != str(self.uuid):
-            return None
-        val = request.form.get("choose")
-        if val not in ["Yes", "No"]:
-            return None
-        state.respond(val == "Yes")
-        return self.reload()
 
 
 class Input(Awaiter):
@@ -143,15 +125,8 @@ class Input(Awaiter):
 
     def handle(self, state):
         """
-        Handle form submission
+        Handle slack submission
         """
-        if request.form.get("uuid") != str(self.uuid):
-            return None
-        val = request.form.get("textinput")
-        if val is None:
-            return None
-        state.respond(val)
-        return self.reload()
 
 
 class Choice(Awaiter):
@@ -161,32 +136,26 @@ class Choice(Awaiter):
 
     def handle(self, state):
         """
-        Handle form submission
+        Handle slack submission
         """
-        if request.form.get("uuid") != str(self.uuid):
-            return None
-        val = request.form.get("selection")
-        if val is None:
-            return None
-        state.respond(self.choices.get(int(val)))
-        return self.reload()
 
 
 STATE = SlackStateHandler()
+
+
+@slack.RTMClient.run_on(event="message")
+def rtm_message(**payload):
+    """
+    Message hook
+    """
+    print("msg")
+
 
 def main(target, start):
     """
     Alternative way of running meticulous via slack conversations
     """
-    run_app(target, host, port)
-
-
-def run_app(target, host, port):
-    """
-    Alternative way of running meticulous in a browser
-    """
-    STATE.start(target)
-    try:
-        APP.run(host=host, port=port)
-    finally:
-        STATE.stop()
+    slack_token = os.environ["SLACK_FAMILY_TOKEN"]
+    rtm_client = slack.RTMClient(token=slack_token)
+    rtm_client.start()
+    STATE.run(target)
