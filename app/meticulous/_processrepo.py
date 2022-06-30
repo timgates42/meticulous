@@ -357,7 +357,7 @@ def get_sorted_words(interaction, jsonobj):
         order.append(((priority, len(details["files"]), replacement), word))
     order.sort(reverse=True)
     interaction.send(f"-- Candidates Found: {len(order)} --")
-    maxwords = 50
+    maxwords = 15
     wordchoice = []
     for num, ((priority, num_files, replacement), word) in enumerate(order[:maxwords]):
         if not replacement:

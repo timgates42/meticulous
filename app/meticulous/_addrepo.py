@@ -252,7 +252,7 @@ def update_json_results(repo, words):
     items = list(words.items())
     random.SystemRandom().shuffle(items)
     count = 0
-    max_suggestions = 50
+    max_suggestions = 15
     for index, (word, details) in enumerate(items):
         add_progress(key, f"Processing {index + 1} of {len(items)} for {repo}")
         if unanimous.util.is_nonword(word):
