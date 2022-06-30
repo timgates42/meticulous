@@ -33,7 +33,7 @@ class SlackStateHandler(Interaction):
     def join_messages(self, message):
         self.messages.append(message)
         message = "\n".join(self.messages)
-        del self.message[:]
+        del self.messages[:]
         return message
 
     def run(self, target):
