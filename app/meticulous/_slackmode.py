@@ -164,7 +164,7 @@ class Choice(Awaiter):
                 (indx, text.split(") ", 1)[-1]) for indx, text in options
             )
         )
-        MESSAGES.send_message(f"{message}\n{option_message}")
+        MESSAGES.send_message(f"{message}\n\n\n\n\n\n{option_message}")
 
     def handle(self, state, message):
         """
