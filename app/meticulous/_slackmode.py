@@ -57,12 +57,14 @@ class SlackStateHandler(Interaction):
         return self.get_await(Input(message))
 
     def make_choice(self, choices, message="Please make a selection."):
+        message = self.join_messages(message)
         return self.get_await(Choice(choices, message))
 
     def check_quit(self, controller):
         return controller.tasks_empty()
 
     def get_confirmation(self, message="Do you want to continue", defaultval=True):
+        message = self.join_messages(message)
         return self.get_await(Confirmation(message, defaultval))
 
     def get_await(self, key):
