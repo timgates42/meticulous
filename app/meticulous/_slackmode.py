@@ -5,6 +5,7 @@ Alternative way of running meticulous via slack conversations
 import datetime
 import logging
 import os
+import re
 from threading import Condition
 
 from slack_sdk.rtm_v2 import RTMClient
@@ -27,6 +28,13 @@ class SlackStateHandler(Interaction):
         self.condition = Condition()
         self.await_key = None
         self.response_val = None
+        self.messages = []
+
+    def join_messages(self, message):
+        self.messages.append(message)
+        message = "\n".join(self.messages)
+        del self.message[:]
+        return message
 
     def run(self, target):
         """
@@ -45,6 +53,7 @@ class SlackStateHandler(Interaction):
         self.started_at = datetime.datetime.min
 
     def get_input(self, message):
+        message = self.join_messages(message)
         return self.get_await(Input(message))
 
     def make_choice(self, choices, message="Please make a selection."):
@@ -74,7 +83,7 @@ class SlackStateHandler(Interaction):
         self.await_key.handle(self, message)
 
     def send(self, message):
-        MESSAGES.send_message(message)
+        self.messages.append(message)
 
     def respond(self, val):
         """
@@ -147,7 +156,12 @@ class Choice(Awaiter):
         super().__init__()
         options = list(enumerate(sorted(choices.keys())))
         self.choices = {index: choices[txt] for index, txt in options}
-        option_message = "\n".join(f"{index}. {txt}" for index, txt in options)
+        option_message = "\n".join(
+            f"{index}. {txt}"
+            for index, txt in (
+                (indx, text.split(") ", 1)[-1]) for indx, text in options
+            )
+        )
         MESSAGES.send_message(f"{message}\n{option_message}")
 
     def handle(self, state, message):
@@ -181,10 +195,27 @@ class SlackMessageHandler:
         self.send_message("Meticulous started.")
 
     def send_message(self, text):
+        if not text:
+            return
         self.client.api_call(
             "chat.postMessage",
-            params={"channel": self.channel, "as_user": True, "text": text},
+            params={
+                "channel": self.channel,
+                "as_user": True,
+                "text": self.replace_ansi(text),
+            },
         )
+
+    @staticmethod
+    def replace_ansi(line):
+        re1 = re.compile(r"\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]")
+        re2 = re.compile(r"\x1b[PX^_].*?\x1b\\")
+        re3 = re.compile(r"\x1b\][^\a]*(?:\a|\x1b\\)")
+        re4 = re.compile(r"\x1b[\[\]A-Z\\^_@]")
+        re5 = re.compile(r"[\x00-\x1f\x7f-\x9f\xad]+")
+        for r in [re1, re2, re3, re4, re5]:
+            line = r.sub("*", line, re.MULTILINE)
+        return line
 
 
 STATE = SlackStateHandler()
