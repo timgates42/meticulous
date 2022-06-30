@@ -202,7 +202,9 @@ class SlackMessageHandler:
             params={
                 "channel": self.channel,
                 "as_user": True,
-                "text": self.replace_ansi(text),
+                "text": "\n".join(
+                    self.replace_ansi(line.rstrip("\n")) for line in text.splitlines()
+                ),
             },
         )
 
@@ -214,7 +216,7 @@ class SlackMessageHandler:
         re4 = re.compile(r"\x1b[\[\]A-Z\\^_@]")
         re5 = re.compile(r"[\x00-\x1f\x7f-\x9f\xad]+")
         for r in [re1, re2, re3, re4, re5]:
-            line = r.sub("*", line, re.MULTILINE)
+            line = r.sub("*", line)
         return line
 
 
