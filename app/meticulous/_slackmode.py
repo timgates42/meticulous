@@ -3,10 +3,12 @@ Alternative way of running meticulous via slack conversations
 """
 
 import datetime
+import logging
 import os
 from threading import Condition
 
-import slack
+from slack_sdk.rtm_v2 import RTMClient
+from slack_sdk import WebClient
 
 from meticulous._multiworker import Interaction, multiworker_core
 
@@ -23,15 +25,8 @@ class SlackStateHandler(Interaction):
         self.alive = False
         self.started_at = datetime.datetime.min
         self.condition = Condition()
-        self.messages = []
         self.await_key = None
         self.response_val = None
-
-    def response(self):
-        """
-        Return the current input requirement to the end user
-        """
-        raise NotImplementedError()
 
     def run(self, target):
         """
@@ -72,8 +67,14 @@ class SlackStateHandler(Interaction):
                 self.condition.wait(10)
         return self.response_val
 
+    def receive(self, message):
+        if self.await_key is None:
+            MESSAGES.send_message("Message discarded {message!r} not ready yet.")
+            return
+        self.await_key.handle(self, message)
+
     def send(self, message):
-        self.messages.append(message)
+        MESSAGES.send_message(message)
 
     def respond(self, val):
         """
@@ -81,7 +82,6 @@ class SlackStateHandler(Interaction):
         """
         with self.condition:
             self.await_key = None
-            del self.messages[:]
             self.response_val = val
             self.condition.notify()
 
@@ -94,15 +94,9 @@ class Awaiter:
     def __init__(self):
         pass
 
-    def handle(self, state):
+    def handle(self, state, message):
         """
         Handle slack reposnse
-        """
-        raise NotImplementedError()
-
-    def get_response(self):
-        """
-        Obtain the slack text prompt to send to user
         """
         raise NotImplementedError()
 
@@ -112,10 +106,20 @@ class Confirmation(Awaiter):
     Yes/No
     """
 
-    def handle(self, state):
+    def __init__(self, message, defaultval):
+        super().__init__()
+        self.defaultval = defaultval
+        MESSAGES.send_message(message)
+
+    def handle(self, state, message):
         """
-        Handle slack submission
+        Handle reply
         """
+        umessage = message.upper()
+        if umessage not in ("Y", "N"):
+            MESSAGES.send_message(f"Unknown response {message!r} is not Y or N")
+            return
+        state.respond(umessage == "Y")
 
 
 class Input(Awaiter):
@@ -123,10 +127,15 @@ class Input(Awaiter):
     Text Input
     """
 
-    def handle(self, state):
+    def __init__(self, message):
+        super().__init__()
+        MESSAGES.send_message(message)
+
+    def handle(self, state, message):
         """
-        Handle slack submission
+        Handle reply
         """
+        state.respond(message)
 
 
 class Choice(Awaiter):
@@ -134,28 +143,59 @@ class Choice(Awaiter):
     Selection from choices
     """
 
-    def handle(self, state):
+    def __init__(self, choices, message):
+        super().__init__()
+        options = list(enumerate(sorted(choices.keys())))
+        self.choices = {index: choices[txt] for index, txt in options}
+        option_message = "\n".join(f"{index}. {txt}" for index, txt in options)
+        MESSAGES.send_message(f"{message}\n{option_message}")
+
+    def handle(self, state, message):
         """
-        Handle slack submission
+        Handle reply
         """
+        try:
+            state.respond(self.choices.get(int(message)))
+        except (IndexError, ValueError):
+            MESSAGES.send_message(f"Unknown response {message!r} not in choices")
+            return
+
+
+class SlackMessageHandler:
+    def __init__(self):
+        self.client = None
+        self.rtm_client = None
+        self.channel = None
+
+    def start(self):
+        slack_token = os.environ["SLACK_METICULOUS_TOKEN"]
+        self.channel = os.environ["SLACK_METICULOUS_CHANNEL"]
+        self.client = WebClient(token=slack_token)
+        self.rtm_client = RTMClient(token=slack_token)
+
+        @self.rtm_client.on("message")
+        def handler(client, event):
+            STATE.receive(event["text"])
+
+        self.rtm_client.connect()
+        self.send_message("Meticulous started.")
+
+    def send_message(self, text):
+        self.client.api_call(
+            "chat.postMessage",
+            params={"channel": self.channel, "as_user": True, "text": text},
+        )
 
 
 STATE = SlackStateHandler()
+MESSAGES = SlackMessageHandler()
 
 
-@slack.RTMClient.run_on(event="message")
-def rtm_message(**payload):
-    """
-    Message hook
-    """
-    print("msg")
-
-
-def main(target, start):
+def main(target):
     """
     Alternative way of running meticulous via slack conversations
     """
-    slack_token = os.environ["SLACK_FAMILY_TOKEN"]
-    rtm_client = slack.RTMClient(token=slack_token)
-    rtm_client.start()
+    logging.basicConfig(level=logging.DEBUG)
+    logging.debug("running slack...")
+    MESSAGES.start()
     STATE.run(target)
