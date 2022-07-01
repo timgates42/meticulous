@@ -238,7 +238,7 @@ def main(target):
     """
     Alternative way of running meticulous via slack conversations
     """
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.WARNING)
     logging.debug("running slack...")
     MESSAGES.start()
     STATE.run(target)
