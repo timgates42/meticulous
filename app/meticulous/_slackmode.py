@@ -205,10 +205,18 @@ class SlackMessageHandler:
                 "channel": self.channel,
                 "as_user": True,
                 "text": "\n".join(
-                    self.replace_ansi(line.rstrip("\n")) for line in text.splitlines()
+                    self.replace_ansi(self.replace_slack_formatting(line.rstrip("\n")))
+                    for line in text.splitlines()
                 ),
             },
         )
+
+    @staticmethod
+    def replace_slack_formatting(line):
+        re1 = re.compile(r"[*_~`]")
+        for r in [re1]:
+            line = r.sub(".", line)
+        return line
 
     @staticmethod
     def replace_ansi(line):
