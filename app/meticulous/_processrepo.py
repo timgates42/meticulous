@@ -132,8 +132,12 @@ def interactive_task_collect_nonwords(  # pylint: disable=unused-argument
     if not jsonpath.is_file():
         interaction.send(f"Unable to locate spelling at {jsonpath}")
         return
-    with io.open(jsonpath, "r", encoding="utf-8") as fobj:
-        jsonobj = json.load(fobj)
+    try:
+        with io.open(jsonpath, "r", encoding="utf-8") as fobj:
+            jsonobj = json.load(fobj)
+    except json.decoder.JSONDecodeError:
+        interaction.send(f"Unable to read spelling at {jsonpath}")
+        return
     state = NonwordState(
         interaction=interaction,
         target=target,
