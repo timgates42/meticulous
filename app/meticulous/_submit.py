@@ -596,7 +596,7 @@ def push_commit_multi(repodir, branch_name):
     os.chdir(pathlib.Path.home())
     with local.cwd(repodir):
         to_branch = git("symbolic-ref", "--short", "HEAD").strip()
-        git("commit", "-F", "__commit__.txt")
+        git("commit", "-s", "-F", "__commit__.txt")
         git("push", "origin", f"{to_branch}:{branch_name}")
     return to_branch
 
@@ -615,7 +615,7 @@ def amend_commit(repository_saves_multi, from_branch, to_branch):
     # plumbum bug workaround
     os.chdir(pathlib.Path.home())
     with local.cwd(repodir):
-        git("commit", "-F", "__commit__.txt", "--amend")
+        git("commit", "-s", "-F", "__commit__.txt", "--amend")
         git("push", "origin", "-f", f"{to_branch}:{from_branch}")
 
 
