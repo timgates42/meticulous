@@ -191,7 +191,11 @@ class SlackMessageHandler:
 
         @self.rtm_client.on("message")
         def handler(client, event):
-            STATE.receive(event["text"])
+            if event.get("bot_id"):
+                return
+            event_text = event.get("text")
+            if event_text:
+                STATE.receive(event_text)
 
         self.rtm_client.connect()
         self.send_message("Meticulous started.")
