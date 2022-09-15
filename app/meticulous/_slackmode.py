@@ -171,8 +171,8 @@ class Choice(Awaiter):
         Handle reply
         """
         try:
-            state.respond(self.choices.get(int(message)))
-        except (IndexError, ValueError):
+            state.respond(self.choices[int(message)])
+        except (IndexError, ValueError, KeyError):
             MESSAGES.send_message(f"Unknown response {message!r} not in choices")
             return
 
