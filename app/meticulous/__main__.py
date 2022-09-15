@@ -19,23 +19,25 @@ __version__ = "0.1"
 @click.version_option(version=__version__)
 @click.option("--target", nargs=1)
 @click.option("--start/--no-start", default=False)
+@click.option("--slack/--no-slack", default=False)
 @click.pass_context
-def main(ctxt, target, start):
+def main(ctxt, target, start, slack):
     """
     Main click group handler
     """
     if ctxt.invoked_subcommand is None:
-        run_invocation(target, start)
+        run_invocation(target, start, slack)
 
 
 @main.command()
 @click.option("--target", nargs=1)
 @click.option("--start/--no-start", default=False)
-def invoke(target, start):
+@click.option("--slack/--no-slack", default=False)
+def invoke(target, start, slack):
     """
     Primary command handler
     """
-    run_invocation(target, start)
+    run_invocation(target, start, slack)
 
 
 @main.command()
